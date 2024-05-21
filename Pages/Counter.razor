@@ -1,0 +1,21 @@
+﻿@page "/counter"
+
+<PageTitle>Counter</PageTitle>
+<RadzenCard Style="max-width : 300px " Class="rz-my-12 rz-mx-auto">
+    <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Center">
+        <RadzenText Text="Counter" Style="font-weight:bold ; font-size: 35px"/>
+        <RadzenText Text=@($"Current Count: {currentCount}")/>
+        <RadzenButton Icon="add_circle" Text="Click Me" Click="@(() => ChangeCount(1))" class="rz-border-radius"/>
+        <RadzenButton Icon="remove_circle" Text="Clik Me" Click="@(() => ChangeCount(-1))" class="rz-border-radius"/>
+    </RadzenStack>
+</RadzenCard>
+
+@code {
+    private int currentCount;
+
+    private void ChangeCount(int i)
+    {
+        currentCount += i;
+    }
+
+}

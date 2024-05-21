@@ -1,0 +1,41 @@
+﻿@page "/fetchdata"
+@using BlazorServerApp.Data
+@inject WeatherForecastService ForecastService
+
+<PageTitle>Weather forecast</PageTitle>
+<RadzenText Text="Weather forecast" TextStyle="TextStyle.H3" Style="font-weight:bold"/>
+<RadzenText Text="This component demonstrates fetching data from a service" TextStyle="TextStyle.H5"/>
+
+@if (forecasts == null)
+{
+    <RadzenText TextStyle="TextStyle.H5" Style="font-style:italic" class="rz-m-10">
+        Loading Services...
+    </RadzenText>
+}
+else
+{
+    <RadzenDataGrid AllowMultiColumnSorting="true" AllowColumnResize="true" AllowAlternatingRows="false"
+                    FilterMode="FilterMode.Advanced" AllowSorting="true" PageSize="3" AllowPaging="true"
+                    PagerHorizontalAlign="HorizontalAlign.Left" ShowPagingSummary="true" GridLines="DataGridGridLines.Both"
+                    Data="@dataForecasts" ColumnWidth="50px" LogicalFilterOperator="LogicalFilterOperator.Or"
+                    SelectionMode="DataGridSelectionMode.Single">
+        <Columns>
+            <RadzenDataGridColumn Property="Date" Title="Date" Frozen="true"/>
+            <RadzenDataGridColumn Property="TemperatureC" Title="TemperatureC" FormatString="{0:d}"/>
+            <RadzenDataGridColumn Property="TemperatureF" Title="TemperatureF" FormatString="{0:d}"/>
+            <RadzenDataGridColumn Property="Summary" Title="Summary"/>
+        </Columns>
+    </RadzenDataGrid>
+}
+
+@code {
+    private WeatherForecast[]? forecasts;
+    IEnumerable<WeatherForecast>? dataForecasts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        forecasts = await ForecastService.GetForecastAsync(DateOnly.FromDateTime(DateTime.Now));
+        dataForecasts = await ForecastService.GetForecastAsync(DateOnly.FromDateTime(DateTime.Now));
+    }
+
+}

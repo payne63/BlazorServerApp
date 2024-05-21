@@ -1,0 +1,171 @@
+﻿@page "/contacts"
+@using BlazorServerApp.Db
+@using Microsoft.EntityFrameworkCore
+@inject DbService dataContext
+@inject DialogService dialogService
+
+<PageTitle>Contacts</PageTitle>
+
+<RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Center" Gap="10px" class="mt-2 mb-4">
+    <RadzenText Text="Contact" Style="font-weight:bold ; font-size: 35px"/>
+    <RadzenButton ButtonStyle="ButtonStyle.Primary" Icon="add_circle_outline" Text="Add Contact"
+                  Click="@InsertRow" Disabled="@(_isEditMode)"/>
+</RadzenStack>
+
+@if (_models == null)
+{
+    <RadzenText TextStyle="TextStyle.H5" Style="font-style:italic" class="rz-m-10">
+        Loading Services...
+    </RadzenText>
+}
+else
+{
+    <RadzenDataGrid AllowMultiColumnSorting="true" AllowAlternatingRows="false" AllowFiltering="true"
+                    FilterMode="FilterMode.Simple" AllowSorting="true" AllowColumnResize="true"
+                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                    PagerHorizontalAlign="HorizontalAlign.Left" ShowPagingSummary="true" GridLines="DataGridGridLines.Vertical"
+                    Data="@_models" ColumnWidth="300px" LogicalFilterOperator="LogicalFilterOperator.Or"
+                    SelectionMode="DataGridSelectionMode.Single" TItem="ContactModel" @ref="_contactsGrid"
+                    Density="Density.Compact" RowCreate="@OnCreateRow" RowUpdate="@OnUpdateRow">
+        <Columns>
+            <RadzenDataGridColumn Property="Surname" Title="Nom" Width="160px">
+                <EditTemplate Context="ContactModel">
+                    <RadzenTextBox @bind-Value="ContactModel.Surname" Style="width:140px; display: block" Name="Surname"/>
+                    <RadzenRequiredValidator Text="Champ requis" Component="Surname" Popup="true"/>
+                </EditTemplate>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn Property="Name" Title="Prénom" Width="160px">
+                <EditTemplate Context="ContactModel">
+                    <RadzenTextBox @bind-Value="ContactModel.Name" Style="width:140px; display: block" Name="Name"/>
+                </EditTemplate>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn Property="Compagny" Title="Entreprise" Width="160px">
+                <EditTemplate Context="ContactModel">
+                    <RadzenTextBox @bind-Value="ContactModel.Compagny" Style="width:140px; display: block" Name="Compagny"/>
+                    <RadzenRequiredValidator Text="Champ requis" Component="Compagny" Popup="true"/>
+                </EditTemplate>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn Property="Phone1" Title="Telephone 1"
+                                  FormatString="{0:d}" Width="160px" Filterable="false">
+                <EditTemplate Context="ContactModel">
+                    <RadzenTextBox @bind-Value="ContactModel.Phone1" Style="width:140px; display: block" Name="Phone1"/>
+                </EditTemplate>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn Property="Mail" Title="Mail" Filterable="false">
+                <EditTemplate Context="ContactModel">
+                    <RadzenTextBox @bind-Value="ContactModel.Mail" Style="width:140px; display: block" Name="Mail"/>
+                    <RadzenEmailValidator Text="mail incorrect" Component="Mail" Popup="true"/>
+                </EditTemplate>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn Context="ContactModel" Filterable="false" Sortable="false" TextAlign="TextAlign.Left"
+                                  Frozen="true" FrozenPosition="FrozenColumnPosition.Right" Width="100">
+                <Template Context="ContactModel">
+                    <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Size="ButtonSize.Medium" Click="@(args => EditRow(ContactModel))" @onclick:stopPropagation="true">
+                    </RadzenButton>
+                    <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Variant="Variant.Flat" Shade="Shade.Lighter" Size="ButtonSize.Medium" class="my-1 ms-1" Click="@(args => DeleteRow(ContactModel))" @onclick:stopPropagation="true">
+                    </RadzenButton>
+                </Template>
+                <EditTemplate Context="ContactModel">
+                    <RadzenButton Icon="check" ButtonStyle="ButtonStyle.Success" Variant="Variant.Flat" Size="ButtonSize.Medium" Click="@(args => SaveRow(ContactModel))" aria-label="Save">
+                    </RadzenButton>
+                    <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Size="ButtonSize.Medium" class="my-1 ms-1" Click="@(args => CancelEdit(ContactModel))" aria-label="Cancel">
+                    </RadzenButton>
+                </EditTemplate>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+}
+
+@code
+{
+    RadzenDataGrid<ContactModel>? _contactsGrid;
+    IEnumerable<ContactModel>? _models;
+    bool _isEditMode;
+
+    protected override Task OnInitializedAsync()
+    {
+        _models = dataContext.GetAllContacts();
+        return Task.CompletedTask;
+    }
+
+    async Task EditRow(ContactModel contactModel)
+    {
+        if (_contactsGrid == null)
+        {
+            return;
+        }
+
+        _isEditMode = true;
+        await _contactsGrid.EditRow(contactModel);
+    }
+
+    async Task DeleteRow(ContactModel contactModel)
+    {
+        if (_models == null || _contactsGrid == null)
+        {
+            return;
+        }
+
+        var result = await dialogService.Confirm("Supprimer ce contact?",
+            "Attention",
+            new ConfirmOptions { OkButtonText = "Oui", CancelButtonText = "Non" });
+        if (result == true)
+        {
+            if (_models.Contains(contactModel))
+            {
+                dataContext.Remove(contactModel);
+                await _contactsGrid.Reload();
+            }
+        }
+    }
+
+    async Task SaveRow(ContactModel contactModel)
+    {
+        if (_contactsGrid == null)
+        {
+            return;
+        }
+
+        _isEditMode = false;
+        await _contactsGrid.UpdateRow(contactModel);
+    }
+
+    void CancelEdit(ContactModel contactModel)
+    {
+        if (_contactsGrid == null)
+        {
+            return;
+        }
+
+        _isEditMode = false;
+        _contactsGrid.CancelEditRow(contactModel);
+        var contactEntry = dataContext.GetDb.Entry(contactModel);
+        if (contactEntry.State != EntityState.Modified) return;
+        contactEntry.CurrentValues.SetValues(contactEntry.OriginalValues);
+        contactEntry.State = EntityState.Unchanged;
+    }
+
+    async Task InsertRow(MouseEventArgs mouseEventArgs)
+    {
+        if (_contactsGrid == null)
+        {
+            return;
+        }
+
+        _isEditMode = true;
+        var contactToInsert = new ContactModel();
+        await _contactsGrid.InsertRow(contactToInsert);
+    }
+
+    void OnCreateRow(ContactModel contactModel)
+    {
+        dataContext.Add(contactModel);
+    }
+
+    void OnUpdateRow(ContactModel contactModel)
+    {
+        dataContext.Update(contactModel);
+        dataContext.Save();
+    }
+}

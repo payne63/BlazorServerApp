@@ -1,0 +1,39 @@
+@page "/settings"
+@inject ThemeService _ThemeService
+@inject  NavigationManager _UriHelper
+@inject EventConsoleService _EventConsoleService
+@using BlazorServerApp.Services
+
+<PageTitle>Paramètre</PageTitle>
+<RadzenCard Style="width: 600px">
+    <RadzenStack Orientation="Orientation.Horizontal">
+        <RadzenFieldset Text=" Theme de l'interface" Icon="color_lens" >
+            <RadzenRadioButtonList Orientation="Orientation.Vertical" TValue="@string" Change="ChangeTheme"
+                                   Data="@ThemeService.Themes" TextProperty="Text" ValueProperty="Value"
+                                   @bind-Value="@_ThemeService.CurrentTheme"/>
+        </RadzenFieldset>
+        <RadzenFieldset Text="Console d'évenement">
+            <RadzenStack Orientation="Orientation.Horizontal">
+                <RadzenText Text="Visible"/>            
+                <RadzenSwitch @bind-Value="@_EventConsoleService.IsVisible"  Change="Callback"/>
+            </RadzenStack>
+        </RadzenFieldset>
+    </RadzenStack>
+    
+</RadzenCard>
+
+@code {
+
+    private void ChangeTheme(string themeValue)
+    {
+        var url = _UriHelper.GetUriWithQueryParameter("theme", $"{themeValue}");
+        _UriHelper.NavigateTo(url, true);
+    }
+
+    private void Callback(bool obj)
+    {
+        _EventConsoleService.Log($"switch change for {_EventConsoleService.IsVisible}");
+        _UriHelper.NavigateTo("/settings", true);
+    }
+
+}

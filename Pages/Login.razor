@@ -1,0 +1,48 @@
+﻿@page "/login"
+@using System.Diagnostics
+
+<PageTitle>Login</PageTitle>
+
+<RadzenCard class="rz-my-12 rz-mx-auto rz-p-4 rz-p-md-12" style="max-width: 600px;">
+    <RadzenStack Orientation="Orientation.Vertical">
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
+                     JustifyContent="JustifyContent.Center" Gap="0px">
+            <RadzenText Text="Login" Style="font-weight:bold ; font-size: 35px"/>
+            <RadzenIcon Icon="login" Style=" font-size:4em " class="rz-m-7"/>
+        </RadzenStack>
+        <RadzenTemplateForm Data=@("LoginWithDefaultValues")>
+            <RadzenLogin AllowRegister="true" AllowResetPassword="true" Username="@userName" Password="@password"
+                         Login=@(args => OnLogin(args, "Login with default values"))
+                         ResetPassword=@(args => OnResetPassword(args, "Login with default values"))
+                         Register=@(args => OnRegister("Login with default values"))
+                         LoginText="Connection"
+                         UserText="Utilisateur"
+                         PasswordText="Mot de passe"
+                         RegisterText="S'enregister"
+                         ResetPasswordText="Mot de passe oublié"
+                         RegisterMessageText="Pas encore de compte?"/>
+        </RadzenTemplateForm>
+    </RadzenStack>
+</RadzenCard>
+
+@code {
+    readonly string userName = "admin";
+    readonly string password = "admin";
+
+
+    void OnLogin(LoginArgs args, string name)
+    {
+        Trace.WriteLine($"{name} -> Username: {args.Username}, password: {args.Password}, remember me: {args.RememberMe}");
+    }
+
+    void OnRegister(string name)
+    {
+        Trace.WriteLine($"{name} -> Register");
+    }
+
+    void OnResetPassword(string value, string name)
+    {
+        Trace.WriteLine($"{name} -> ResetPassword for user: {value}");
+    }
+
+}

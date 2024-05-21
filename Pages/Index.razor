@@ -1,0 +1,54 @@
+﻿@page "/"
+@inject DialogService DialogService
+@inject TooltipService TooltipService
+
+<PageTitle>Index</PageTitle>
+
+<RadzenText Text="Hello World!" TextStyle="TextStyle.H2"/>
+
+<RadzenButton Text="popo" Click="@(() => ToggleChange(false))"/>
+<RadzenButton Click="radzenButtonClick" Text="Hi"/>
+<RadzenToggleButton Change="ToggleChange" Text="On Air" MouseEnter="@ShowToolTip"/>
+<RadzenIcon Icon="south"/>
+<RadzenSwitch @ref="@swi" Change="SwitchChange" MouseEnter="@ShowToolTip"/>
+<RadzenDataGrid Data="@data" TItem="string" AllowFiltering="true">
+    <Columns>
+        <RadzenDataGridColumn TItem="string" Title="text">
+            <Template Context="s">@s</Template>
+        </RadzenDataGridColumn>
+    </Columns>
+</RadzenDataGrid>
+<SurveyPrompt Title="How is Blazor working for you?"/>
+
+
+@code {
+    bool sideBarExpanded = true;
+    private RadzenSwitch swi;
+    private string[] data;
+
+    void radzenButtonClick()
+    {
+        DialogService.Alert("Hi");
+    }
+
+    private void ToggleChange(bool status)
+    {
+        DialogService.Alert(status ? "ON" : "OFF");
+    }
+
+    private void SwitchChange(bool status)
+    {
+        DialogService.Alert(swi.Value ? "ON" : "OFF");
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        data = new[] { "abc", "def", "ghi" };
+    }
+
+    void ShowToolTip(ElementReference er)
+    {
+        TooltipService.Open(er, "Hello", new TooltipOptions { Delay = 700, Duration = 2000 });
+    }
+
+}
