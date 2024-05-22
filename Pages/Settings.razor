@@ -5,7 +5,7 @@
 @using BlazorServerApp.Services
 
 <PageTitle>Paramètre</PageTitle>
-<RadzenCard Style="width: 600px">
+<RadzenCard class="rz-my-12 rz-mx-auto rz-p-4 rz-p-md-12" Style="width: 600px">
     <RadzenStack Orientation="Orientation.Horizontal">
         <RadzenFieldset Text=" Theme de l'interface" Icon="color_lens" >
             <RadzenRadioButtonList Orientation="Orientation.Vertical" TValue="@string" Change="ChangeTheme"
@@ -33,7 +33,8 @@
     private void Callback(bool obj)
     {
         _EventConsoleService.Log($"switch change for {_EventConsoleService.IsVisible}");
-        _UriHelper.NavigateTo("/settings", true);
+        var url = _UriHelper.GetUriWithQueryParameter("console", $"{_EventConsoleService.IsVisible}");
+        _UriHelper.NavigateTo(url, true);
     }
 
 }

@@ -2,7 +2,7 @@
 
 namespace BlazorServerApp.Db;
 
-public class DataContext : DbContext
+public class DataBaseContext : DbContext
 {
     public string DbPath = @"Db\DBcontacts.db";
 

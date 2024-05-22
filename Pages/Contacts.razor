@@ -1,16 +1,22 @@
 ﻿@page "/contacts"
-@using BlazorServerApp.Db
 @using Microsoft.EntityFrameworkCore
-@inject DbService dataContext
+@inject DataBaseService dataContext
 @inject DialogService dialogService
 
 <PageTitle>Contacts</PageTitle>
-
-<RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Center" Gap="10px" class="mt-2 mb-4">
-    <RadzenText Text="Contact" Style="font-weight:bold ; font-size: 35px"/>
-    <RadzenButton ButtonStyle="ButtonStyle.Primary" Icon="add_circle_outline" Text="Add Contact"
-                  Click="@InsertRow" Disabled="@(_isEditMode)"/>
+<RadzenCard class="rz-my-2 rz-mx-auto rz-p-2 rz-p-md-2" >
+    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="10px" class="mt-2 mb-4">
+        <RadzenText Text="Contact" Style="font-weight:bold ; font-size: 35px"/>
+        <RadzenSelectBar @bind-Value="@_selectedViewType">
+            <Items>
+                <RadzenSelectBarItem Text="Cartes" Value="@ViewType.Card"/>
+                <RadzenSelectBarItem Text="Grille" Value="@ViewType.Grid"/>
+            </Items>
+        </RadzenSelectBar>
+        <RadzenButton ButtonStyle="ButtonStyle.Primary" Icon="add_circle_outline" Text="Add Contact"
+                      Click="@InsertRow" Disabled="@(_isEditMode)" Visible="@(_selectedViewType == ViewType.Grid)"/>
 </RadzenStack>
+</RadzenCard>
 
 @if (_models == null)
 {
@@ -18,14 +24,14 @@
         Loading Services...
     </RadzenText>
 }
-else
+else if (_selectedViewType == ViewType.Grid)
 {
     <RadzenDataGrid AllowMultiColumnSorting="true" AllowAlternatingRows="false" AllowFiltering="true"
                     FilterMode="FilterMode.Simple" AllowSorting="true" AllowColumnResize="true"
                     FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
                     PagerHorizontalAlign="HorizontalAlign.Left" ShowPagingSummary="true" GridLines="DataGridGridLines.Vertical"
                     Data="@_models" ColumnWidth="300px" LogicalFilterOperator="LogicalFilterOperator.Or"
-                    SelectionMode="DataGridSelectionMode.Single" TItem="ContactModel" @ref="_contactsGrid"
+                    SelectionMode="DataGridSelectionMode.Single" TItem="ContactModel" @ref="_radzenDataGrid"
                     Density="Density.Compact" RowCreate="@OnCreateRow" RowUpdate="@OnUpdateRow">
         <Columns>
             <RadzenDataGridColumn Property="Surname" Title="Nom" Width="160px">
@@ -39,9 +45,9 @@ else
                     <RadzenTextBox @bind-Value="ContactModel.Name" Style="width:140px; display: block" Name="Name"/>
                 </EditTemplate>
             </RadzenDataGridColumn>
-            <RadzenDataGridColumn Property="Compagny" Title="Entreprise" Width="160px">
+            <RadzenDataGridColumn Property="Company" Title="Entreprise" Width="160px">
                 <EditTemplate Context="ContactModel">
-                    <RadzenTextBox @bind-Value="ContactModel.Compagny" Style="width:140px; display: block" Name="Compagny"/>
+                    <RadzenTextBox @bind-Value="ContactModel.Company" Style="width:140px; display: block" Name="Compagny"/>
                     <RadzenRequiredValidator Text="Champ requis" Component="Compagny" Popup="true"/>
                 </EditTemplate>
             </RadzenDataGridColumn>
@@ -76,10 +82,46 @@ else
         </Columns>
     </RadzenDataGrid>
 }
+else
+{
+    <RadzenDataList WrapItems="true" AllowPaging="true" Data="@_models" TItem="@ContactModel">
+        <Template Context="contact">
+            <RadzenCard Style="min-width: 300px ">
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
+                    <RadzenGravatar AlternateText="pas d'image" Email="@(contact.Name +contact.Surname)"/>
+                    <RadzenStack Gap="0">
+                        <RadzenText TextStyle="TextStyle.Overline" class="rz-display-flex rz-mt-2 rz-my-0">Nom</RadzenText>
+                        <RadzenText TextStyle="TextStyle.Body1"><b>@(contact.Surname + " " + contact.Name)</b></RadzenText>
+                        <RadzenText TextStyle="TextStyle.Overline" class="rz-display-flex rz-mt-4 rz-mb-0">Téléphone</RadzenText>
+                        <RadzenText TextStyle="TextStyle.Body1"><b>@(contact.Phone1), @(contact.Phone2)</b></RadzenText>
+                    </RadzenStack>
+                </RadzenStack>
+                <hr style="border: none; background-color: rgba(0,0,0,.2); height: 1px; margin: 1rem 0;" />
+                <RadzenRow>
+                    <RadzenColumn Size="8" Class="rz-text-truncate">
+                        <b>@(contact.Company)</b>
+                    </RadzenColumn>
+                    <RadzenColumn Size="4" Class="rz-text-align-end">
+                        <RadzenText Text="@contact.Job"/>
+                        @* <RadzenBadge BadgeStyle="BadgeStyle.Secondary" Text=@($"{String.Format(new System.Globalization.CultureInfo("en-US"), "{0:C}", order.Freight)}")/> *@
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenCard>
+        </Template>
+    </RadzenDataList>
+}
 
 @code
 {
-    RadzenDataGrid<ContactModel>? _contactsGrid;
+    enum ViewType
+    {
+        Card,
+        Grid
+    }
+
+    ViewType _selectedViewType;
+    
+    RadzenDataGrid<ContactModel>? _radzenDataGrid;
     IEnumerable<ContactModel>? _models;
     bool _isEditMode;
 
@@ -91,18 +133,18 @@ else
 
     async Task EditRow(ContactModel contactModel)
     {
-        if (_contactsGrid == null)
+        if (_radzenDataGrid == null)
         {
             return;
         }
 
         _isEditMode = true;
-        await _contactsGrid.EditRow(contactModel);
+        await _radzenDataGrid.EditRow(contactModel);
     }
 
     async Task DeleteRow(ContactModel contactModel)
     {
-        if (_models == null || _contactsGrid == null)
+        if (_models == null || _radzenDataGrid == null)
         {
             return;
         }
@@ -115,31 +157,31 @@ else
             if (_models.Contains(contactModel))
             {
                 dataContext.Remove(contactModel);
-                await _contactsGrid.Reload();
+                await _radzenDataGrid.Reload();
             }
         }
     }
 
     async Task SaveRow(ContactModel contactModel)
     {
-        if (_contactsGrid == null)
+        if (_radzenDataGrid == null)
         {
             return;
         }
 
         _isEditMode = false;
-        await _contactsGrid.UpdateRow(contactModel);
+        await _radzenDataGrid.UpdateRow(contactModel);
     }
 
     void CancelEdit(ContactModel contactModel)
     {
-        if (_contactsGrid == null)
+        if (_radzenDataGrid == null)
         {
             return;
         }
 
         _isEditMode = false;
-        _contactsGrid.CancelEditRow(contactModel);
+        _radzenDataGrid.CancelEditRow(contactModel);
         var contactEntry = dataContext.GetDb.Entry(contactModel);
         if (contactEntry.State != EntityState.Modified) return;
         contactEntry.CurrentValues.SetValues(contactEntry.OriginalValues);
@@ -148,14 +190,14 @@ else
 
     async Task InsertRow(MouseEventArgs mouseEventArgs)
     {
-        if (_contactsGrid == null)
+        if (_radzenDataGrid == null)
         {
             return;
         }
 
         _isEditMode = true;
         var contactToInsert = new ContactModel();
-        await _contactsGrid.InsertRow(contactToInsert);
+        await _radzenDataGrid.InsertRow(contactToInsert);
     }
 
     void OnCreateRow(ContactModel contactModel)

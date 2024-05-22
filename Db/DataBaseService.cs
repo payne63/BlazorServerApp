@@ -1,16 +1,12 @@
 ﻿namespace BlazorServerApp.Db;
 
-public class DbService
+public class DataBaseService
 {
-    public DbService(DataContext _dataContext)
-    {
-        GetDb = _dataContext;
-    }
+    private readonly DataBaseContext _getDb;
+    
+    public DataBaseService(DataBaseContext dataBaseContext) => _getDb = dataBaseContext;
 
-    public DataContext GetDb
-    {
-        get;
-    }
+    public DataBaseContext GetDb => _getDb;
 
     public IEnumerable<ContactModel> GetAllContacts() => GetDb.Contacts.AsEnumerable();
 

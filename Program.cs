@@ -17,10 +17,11 @@ public class Program
         builder.Services.AddSingleton<WeatherForecastService>();
         builder.Services.AddRadzenComponents();
 
-        builder.Services.AddDbContext<DataContext>();
-        builder.Services.AddScoped<DbService>();
+        builder.Services.AddDbContext<DataBaseContext>();
+        builder.Services.AddScoped<DataBaseService>();
         builder.Services.AddScoped<ThemeService>();
         builder.Services.AddScoped<EventConsoleService>();
+        // builder.Services.AddSingleton<EventConsoleService>();
 
         var app = builder.Build();
 

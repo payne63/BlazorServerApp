@@ -1,4 +1,6 @@
 using System.Text.Json;
+using System.Web;
+using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using Radzen;
 
@@ -16,11 +18,7 @@ public class EventConsoleService
     public bool IsVisible { get; set; }
     public IList<Message> messages = new List<Message>();
     
-    public EventConsoleService( )
-    {
-        // IsVisible = true;
-    }
-    
+  
 
     public void Clear() => messages.Clear();
 
@@ -33,6 +31,17 @@ public class EventConsoleService
     public void Log(object value)
     {
         Log(JsonSerializer.Serialize(value));
+    }
+
+    public EventConsoleService(NavigationManager navigationManager)
+    {
+        var uri = new Uri(navigationManager.ToAbsoluteUri(navigationManager.Uri).ToString());
+        var query = HttpUtility.ParseQueryString(uri.Query);
+        var value = query.Get("console");
+        if (value != null)
+        {
+            IsVisible = bool.Parse(value);
+        }
     }
 
     public event EventHandler? NewLogEvent;

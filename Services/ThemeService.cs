@@ -244,13 +244,13 @@ namespace BlazorServerApp.Services
             WCAG = bool.Parse(query.Get(WCAGQueryParameter) ?? "false");
         }
 
-        public void Change(NavigationManager navigationManager, string theme, bool wcag)
-        {
-            var url = navigationManager.GetUriWithQueryParameters(navigationManager.Uri,
-                new Dictionary<string, object>() { { QueryParameter, theme }, { WCAGQueryParameter, $"{wcag}".ToLowerInvariant() } });
-
-            navigationManager.NavigateTo(url, true);
-        }
+        // public void Change(NavigationManager navigationManager, string theme, bool wcag)
+        // {
+        //     var url = navigationManager.GetUriWithQueryParameters(navigationManager.Uri,
+        //         new Dictionary<string, object>() { { QueryParameter, theme }, { WCAGQueryParameter, $"{wcag}".ToLowerInvariant() } });
+        //
+        //     navigationManager.NavigateTo(url, true);
+        // }
         
     }
 }
