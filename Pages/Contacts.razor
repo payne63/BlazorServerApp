@@ -34,6 +34,12 @@ else if (_selectedViewType == ViewType.Grid)
                     SelectionMode="DataGridSelectionMode.Single" TItem="ContactModel" @ref="_radzenDataGrid"
                     Density="Density.Compact" RowCreate="@OnCreateRow" RowUpdate="@OnUpdateRow">
         <Columns>
+            
+            <RadzenDataGridColumn  Width="70px">
+                <Template Context="ContactModel">
+                    <Gravatar AlternateText="pas d'image" Email="@(ContactModel.Name + ContactModel.Surname)"/>
+                </Template>
+            </RadzenDataGridColumn>
             <RadzenDataGridColumn Property="Surname" Title="Nom" Width="160px">
                 <EditTemplate Context="ContactModel">
                     <RadzenTextBox @bind-Value="ContactModel.Surname" Style="width:140px; display: block" Name="Surname"/>
@@ -86,17 +92,19 @@ else
 {
     <RadzenDataList WrapItems="true" AllowPaging="true" Data="@_models" TItem="@ContactModel">
         <Template Context="contact">
-            <RadzenCard Style="min-width: 300px ">
+            <RadzenCard Style="min-width: 300px ;.rz-p-1 ">
                 <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
-                    <RadzenGravatar AlternateText="pas d'image" Email="@(contact.Name +contact.Surname)"/>
-                    <RadzenStack Gap="0">
-                        <RadzenText TextStyle="TextStyle.Overline" class="rz-display-flex rz-mt-2 rz-my-0">Nom</RadzenText>
+                    <Gravatar AlternateText="pas d'image" Email="@(contact.Name +contact.Surname)"/>
+                    <RadzenStack Gap="0" Style=".rz-p-0">
+                        <RadzenText TextStyle="TextStyle.Overline" class="rz-display-flex rz-mt-0 rz-my-0">Nom</RadzenText>
                         <RadzenText TextStyle="TextStyle.Body1"><b>@(contact.Surname + " " + contact.Name)</b></RadzenText>
-                        <RadzenText TextStyle="TextStyle.Overline" class="rz-display-flex rz-mt-4 rz-mb-0">Téléphone</RadzenText>
+                        <RadzenText TextStyle="TextStyle.Overline" class="rz-display-flex rz-mt-2 rz-mb-0">Téléphone</RadzenText>
                         <RadzenText TextStyle="TextStyle.Body1"><b>@(contact.Phone1), @(contact.Phone2)</b></RadzenText>
                     </RadzenStack>
                 </RadzenStack>
-                <hr style="border: none; background-color: rgba(0,0,0,.2); height: 1px; margin: 1rem 0;" />
+                <hr style="border: none; background-color: rgba(0,0,0,.2); height: 1px; margin: 3% 0"/>
+                @* TODO - html non compatible avec le css radzen *@
+                <hr style="border: none; background-color: @("--rz-primary"); height: 1px; margin: 3% 0"/>
                 <RadzenRow>
                     <RadzenColumn Size="8" Class="rz-text-truncate">
                         <b>@(contact.Company)</b>

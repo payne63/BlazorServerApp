@@ -27,6 +27,7 @@ namespace BlazorServerApp.Services
             public string SeriesC { get; set; }
             public bool Premium { get; set; }
         }
+        
         public static readonly Theme[] Themes = new []
         {
             new Theme {
@@ -223,7 +224,7 @@ namespace BlazorServerApp.Services
             }
         };
 
-        public const string DefaultTheme = "material3";
+        public const string DefaultTheme = "material-dark";
         public const string QueryParameter = "theme";
         public const string WCAGQueryParameter = "wcag";
 
