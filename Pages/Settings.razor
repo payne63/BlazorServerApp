@@ -5,17 +5,17 @@
 @using BlazorServerApp.Services
 
 <PageTitle>Paramètre</PageTitle>
-<RadzenCard class="rz-my-12 rz-mx-auto rz-p-4 rz-p-md-12" Style="width: 600px">
-    <RadzenStack Orientation="Orientation.Horizontal">
-        <RadzenFieldset Text=" Theme de l'interface" Icon="color_lens" >
+<RadzenCard Style="width: fit-content ; margin: auto ; display: flex"  >
+    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Normal" JustifyContent="JustifyContent.Center">
+        <RadzenFieldset Text=" Theme de l'interface" Icon="color_lens">
             <RadzenRadioButtonList Orientation="Orientation.Vertical" TValue="@string" Change="ChangeTheme"
                                    Data="@ThemeService.Themes" TextProperty="Text" ValueProperty="Value"
                                    @bind-Value="@_ThemeService.CurrentTheme"/>
         </RadzenFieldset>
-        <RadzenFieldset Text="Console d'évenement">
-            <RadzenStack Orientation="Orientation.Horizontal">
-                <RadzenText Text="Visible"/>            
-                <RadzenSwitch @bind-Value="@_EventConsoleService.IsVisible"  Change="Callback"/>
+        <RadzenFieldset Text=" Console d'évenement" Icon="preview" >
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem" JustifyContent="JustifyContent.Center">
+                <RadzenText Text="Visible" />            
+                <RadzenSwitch @bind-Value="@_EventConsoleService.IsVisible"  Change="Callback" />
             </RadzenStack>
         </RadzenFieldset>
     </RadzenStack>

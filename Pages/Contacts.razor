@@ -1,12 +1,11 @@
 ﻿@page "/contacts"
 @using Microsoft.EntityFrameworkCore
-@inject DataBaseService dataContext
+@inject DataBaseService dataBaseService
 @inject DialogService dialogService
 
 <PageTitle>Contacts</PageTitle>
-<RadzenCard class="rz-my-2 rz-mx-auto rz-p-2 rz-p-md-2" >
-    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="10px" class="mt-2 mb-4">
-        <RadzenText Text="Contact" Style="font-weight:bold ; font-size: 35px"/>
+<RadzenCard class=" rz-p-1 rz-mb-2"  >
+    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="10px" class="m-2">
         <RadzenSelectBar @bind-Value="@_selectedViewType">
             <Items>
                 <RadzenSelectBarItem Text="Cartes" Value="@ViewType.Card"/>
@@ -32,84 +31,99 @@ else if (_selectedViewType == ViewType.Grid)
                     PagerHorizontalAlign="HorizontalAlign.Left" ShowPagingSummary="true" GridLines="DataGridGridLines.Vertical"
                     Data="@_models" ColumnWidth="300px" LogicalFilterOperator="LogicalFilterOperator.Or"
                     SelectionMode="DataGridSelectionMode.Single" TItem="ContactModel" @ref="_radzenDataGrid"
-                    Density="Density.Compact" RowCreate="@OnCreateRow" RowUpdate="@OnUpdateRow">
+                    Density="Density.Compact" RowCreate="@OnCreateRow" RowUpdate="@OnUpdateRow" class="rz-border-radius-1">
         <Columns>
-            
-            <RadzenDataGridColumn  Width="70px">
-                <Template Context="ContactModel">
-                    <Gravatar AlternateText="pas d'image" Email="@(ContactModel.Name + ContactModel.Surname)"/>
+            <RadzenDataGridColumn Context="ContactModel" Filterable="false" Sortable="false" TextAlign="TextAlign.Left" Resizable="false" Title="Edition"
+                                  Frozen="true" Width="100px">
+                <Template Context="contactModel">
+                    <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Size="ButtonSize.Medium" Click="@(_ => EditRow(contactModel))" @onclick:stopPropagation="true">
+                    </RadzenButton>
+                    <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Variant="Variant.Flat" Shade="Shade.Lighter" Size="ButtonSize.Medium" class="my-1 ms-1" Click="@(_ => DeleteRow(contactModel))" @onclick:stopPropagation="true">
+                    </RadzenButton>
+                </Template>
+                <EditTemplate Context="contactModel">
+                    <RadzenButton Icon="check" ButtonStyle="ButtonStyle.Success" Variant="Variant.Flat" Size="ButtonSize.Medium" Click="@(_ => SaveRow(contactModel))" aria-label="Save">
+                    </RadzenButton>
+                    <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Size="ButtonSize.Medium" class="my-1 ms-1" Click="@(_ => CancelEdit(contactModel))" aria-label="Cancel">
+                    </RadzenButton>
+                </EditTemplate>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn  Width="50px" Sortable="false" Resizable="false">
+                <Template Context="contactModel">
+                    <Gravatar AlternateText="pas d'image" Email="@(contactModel.Name + contactModel.Surname)"/>
                 </Template>
             </RadzenDataGridColumn>
-            <RadzenDataGridColumn Property="Surname" Title="Nom" Width="160px">
-                <EditTemplate Context="ContactModel">
-                    <RadzenTextBox @bind-Value="ContactModel.Surname" Style="width:140px; display: block" Name="Surname"/>
+            <RadzenDataGridColumn Property="Surname" Title="Nom" Frozen="true" Width="160px" Resizable="false">
+                <EditTemplate Context="contactModel">
+                    <RadzenTextBox @bind-Value="contactModel.Surname" Style="width:140px; display: block" Name="Surname"/>
                     <RadzenRequiredValidator Text="Champ requis" Component="Surname" Popup="true"/>
                 </EditTemplate>
             </RadzenDataGridColumn>
-            <RadzenDataGridColumn Property="Name" Title="Prénom" Width="160px">
-                <EditTemplate Context="ContactModel">
-                    <RadzenTextBox @bind-Value="ContactModel.Name" Style="width:140px; display: block" Name="Name"/>
+            <RadzenDataGridColumn Property="Name" Title="Prénom" Frozen="true" Width="160px" Resizable="false">
+                <EditTemplate Context="contactModel">
+                    <RadzenTextBox @bind-Value="contactModel.Name" Style="width:140px; display: block" Name="Name"/>
                 </EditTemplate>
             </RadzenDataGridColumn>
             <RadzenDataGridColumn Property="Company" Title="Entreprise" Width="160px">
-                <EditTemplate Context="ContactModel">
-                    <RadzenTextBox @bind-Value="ContactModel.Company" Style="width:140px; display: block" Name="Compagny"/>
+                <EditTemplate Context="contactModel">
+                    <RadzenTextBox @bind-Value="contactModel.Company" Style="width:140px; display: block" Name="Compagny"/>
                     <RadzenRequiredValidator Text="Champ requis" Component="Compagny" Popup="true"/>
                 </EditTemplate>
             </RadzenDataGridColumn>
             <RadzenDataGridColumn Property="Phone1" Title="Telephone 1"
                                   FormatString="{0:d}" Width="160px" Filterable="false">
-                <EditTemplate Context="ContactModel">
-                    <RadzenTextBox @bind-Value="ContactModel.Phone1" Style="width:140px; display: block" Name="Phone1"/>
+                <EditTemplate Context="contactModel">
+                    <RadzenTextBox @bind-Value="contactModel.Phone1" Style="width:140px; display: block" Name="Phone1"/>
                 </EditTemplate>
             </RadzenDataGridColumn>
-            <RadzenDataGridColumn Property="Mail" Title="Mail" Filterable="false">
-                <EditTemplate Context="ContactModel">
-                    <RadzenTextBox @bind-Value="ContactModel.Mail" Style="width:140px; display: block" Name="Mail"/>
+            <RadzenDataGridColumn Property="Phone2" Title="Telephone 2"
+                                  FormatString="{0:d}" Width="160px" Filterable="false">
+                <EditTemplate Context="contactModel">
+                    <RadzenTextBox @bind-Value="contactModel.Phone2" Style="width:140px; display: block" Name="Phone2"/>
+                </EditTemplate>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn Property="Mail" Title="Mail" Width="160px" Filterable="false">
+                <EditTemplate Context="contactModel">
+                    <RadzenTextBox @bind-Value="contactModel.Mail" Style="width:140px; display: block" Name="Mail"/>
                     <RadzenEmailValidator Text="mail incorrect" Component="Mail" Popup="true"/>
                 </EditTemplate>
             </RadzenDataGridColumn>
-
-            <RadzenDataGridColumn Context="ContactModel" Filterable="false" Sortable="false" TextAlign="TextAlign.Left"
-                                  Frozen="true" FrozenPosition="FrozenColumnPosition.Right" Width="100">
-                <Template Context="ContactModel">
-                    <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Size="ButtonSize.Medium" Click="@(args => EditRow(ContactModel))" @onclick:stopPropagation="true">
-                    </RadzenButton>
-                    <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Variant="Variant.Flat" Shade="Shade.Lighter" Size="ButtonSize.Medium" class="my-1 ms-1" Click="@(args => DeleteRow(ContactModel))" @onclick:stopPropagation="true">
-                    </RadzenButton>
-                </Template>
-                <EditTemplate Context="ContactModel">
-                    <RadzenButton Icon="check" ButtonStyle="ButtonStyle.Success" Variant="Variant.Flat" Size="ButtonSize.Medium" Click="@(args => SaveRow(ContactModel))" aria-label="Save">
-                    </RadzenButton>
-                    <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Size="ButtonSize.Medium" class="my-1 ms-1" Click="@(args => CancelEdit(ContactModel))" aria-label="Cancel">
-                    </RadzenButton>
+            <RadzenDataGridColumn Property="Job" Title="Poste" Width="160px" Filterable="false" >
+                <EditTemplate Context="contactModel">
+                    <RadzenTextBox @bind-Value="contactModel.Job" Style="width:140px; display: block" Name="Job"/>
                 </EditTemplate>
             </RadzenDataGridColumn>
+
+
         </Columns>
     </RadzenDataGrid>
 }
 else
 {
-    <RadzenDataList WrapItems="true" AllowPaging="true" Data="@_models" TItem="@ContactModel">
+    <RadzenDataList WrapItems="true" AllowPaging="true" Data="@_models" TItem="@ContactModel" class="rz-p-0">
         <Template Context="contact">
-            <RadzenCard Style="min-width: 300px ;.rz-p-1 ">
+            <RadzenCard Style="padding: 10px;margin: 2px ;flex: 1 ;width: 250px; max-width: 250px ;min-width: 250px">
                 <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
-                    <Gravatar AlternateText="pas d'image" Email="@(contact.Name +contact.Surname)"/>
+                    <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Center">
+                        <RadzenIcon Icon="@(contact.Ismale?"boy":"girl")" IconColor="@Colors.Secondary" Style="font-size: 50px"></RadzenIcon>
+                        <Gravatar AlternateText="pas d'image" Email="@(contact.Name + contact.Surname)"/>
+                    </RadzenStack>
                     <RadzenStack Gap="0" Style=".rz-p-0">
-                        <RadzenText TextStyle="TextStyle.Overline" class="rz-display-flex rz-mt-0 rz-my-0">Nom</RadzenText>
-                        <RadzenText TextStyle="TextStyle.Body1"><b>@(contact.Surname + " " + contact.Name)</b></RadzenText>
+                        <RadzenText TextStyle="TextStyle.Overline" class="rz-display-flex rz-mt-0 rz-my-0 ">Nom</RadzenText>
+                        <RadzenText TextStyle="TextStyle.Body1" class="rz-text-nowrap"><b>@(contact.Surname + " " + contact.Name)</b></RadzenText>
                         <RadzenText TextStyle="TextStyle.Overline" class="rz-display-flex rz-mt-2 rz-mb-0">Téléphone</RadzenText>
-                        <RadzenText TextStyle="TextStyle.Body1"><b>@(contact.Phone1), @(contact.Phone2)</b></RadzenText>
+                        <RadzenText TextStyle="TextStyle.Body1"><b>@(!string.IsNullOrEmpty(contact.Phone1) ? contact.Phone1 : ".")</b></RadzenText>
+                        <RadzenText TextStyle="TextStyle.Body1"><b>@(!string.IsNullOrEmpty(contact.Phone2) ? contact.Phone2 : ".")</b></RadzenText>
+                        <RadzenText TextStyle="TextStyle.Overline" class="rz-display-flex rz-mt-2 rz-my-0 ">Mail</RadzenText>
+                        <RadzenText TextStyle="TextStyle.Body1" class="rz-text-nowrap"><b>@(!string.IsNullOrEmpty(contact.Mail) ? contact.Mail : ".")</b></RadzenText>
                     </RadzenStack>
                 </RadzenStack>
-                <hr style="border: none; background-color: rgba(0,0,0,.2); height: 1px; margin: 3% 0"/>
-                @* TODO - html non compatible avec le css radzen *@
-                <hr style="border: none; background-color: @("--rz-primary"); height: 1px; margin: 3% 0"/>
+                <hr style="border: none; background-color: var(--rz-primary-light); height: 2px; margin: 3% 0"/>
                 <RadzenRow>
-                    <RadzenColumn Size="8" Class="rz-text-truncate">
+                    <RadzenColumn Class="rz-text-truncate rz-text-align-start">
                         <b>@(contact.Company)</b>
                     </RadzenColumn>
-                    <RadzenColumn Size="4" Class="rz-text-align-end">
+                    <RadzenColumn  Class="rz-text-align-end">
                         <RadzenText Text="@contact.Job"/>
                         @* <RadzenBadge BadgeStyle="BadgeStyle.Secondary" Text=@($"{String.Format(new System.Globalization.CultureInfo("en-US"), "{0:C}", order.Freight)}")/> *@
                     </RadzenColumn>
@@ -135,7 +149,7 @@ else
 
     protected override Task OnInitializedAsync()
     {
-        _models = dataContext.GetAllContacts();
+        _models = dataBaseService.GetAllContacts();
         return Task.CompletedTask;
     }
 
@@ -164,7 +178,7 @@ else
         {
             if (_models.Contains(contactModel))
             {
-                dataContext.Remove(contactModel);
+                dataBaseService.Remove(contactModel);
                 await _radzenDataGrid.Reload();
             }
         }
@@ -190,7 +204,7 @@ else
 
         _isEditMode = false;
         _radzenDataGrid.CancelEditRow(contactModel);
-        var contactEntry = dataContext.GetDb.Entry(contactModel);
+        var contactEntry = dataBaseService.GetDb.Entry(contactModel);
         if (contactEntry.State != EntityState.Modified) return;
         contactEntry.CurrentValues.SetValues(contactEntry.OriginalValues);
         contactEntry.State = EntityState.Unchanged;
@@ -210,12 +224,12 @@ else
 
     void OnCreateRow(ContactModel contactModel)
     {
-        dataContext.Add(contactModel);
+        dataBaseService.Add(contactModel);
     }
 
     void OnUpdateRow(ContactModel contactModel)
     {
-        dataContext.Update(contactModel);
-        dataContext.Save();
+        dataBaseService.Update(contactModel);
+        dataBaseService.Save();
     }
 }

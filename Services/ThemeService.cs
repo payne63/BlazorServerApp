@@ -224,7 +224,7 @@ namespace BlazorServerApp.Services
             }
         };
 
-        public const string DefaultTheme = "material-dark";
+        public const string DefaultTheme = "dark";
         public const string QueryParameter = "theme";
         public const string WCAGQueryParameter = "wcag";
 

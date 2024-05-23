@@ -18,15 +18,19 @@ public class DataBaseService
 
     public void Update(ContactModel contact)
     {
+        CompagnyToUpper(contact);
         GetDb.Update(contact);
         GetDb.SaveChanges();
     }
 
     public void Add(ContactModel contact)
     {
+        CompagnyToUpper(contact);
         GetDb.Add(contact);
         GetDb.SaveChanges();
     }
 
     public void Save() => GetDb.SaveChanges();
+
+    private void CompagnyToUpper(ContactModel contact) => contact.Company = contact.Company.ToUpper();
 }

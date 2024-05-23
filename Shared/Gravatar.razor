@@ -1,0 +1,43 @@
+@inherits RadzenComponent
+
+@if (Visible)
+{
+    <img @ref="@Element" style="@Style" @attributes="Attributes" class="@GetCssClass()" src="@Url" id="@GetId()" alt="@GetAlternateText()" />
+}
+
+@code{
+    [Parameter]
+        public string? Email { get; set; }
+
+    [Parameter] public string AlternateText { get; set; } = "gravatar";
+
+    private string Url
+    {
+        get
+        {
+            var md5Email = MD5.Calculate(System.Text.Encoding.ASCII.GetBytes(Email ?? ""));
+
+            const string style = "identicon";// "retro";
+            const string width = "36";
+
+            return $"https://secure.gravatar.com/avatar/{md5Email}?d={style}&s={width}";
+        }
+    }
+
+    string GetAlternateText()
+    {
+        if (Attributes != null && Attributes.TryGetValue("alt", out var @alt) && !string.IsNullOrEmpty(Convert.ToString(@alt)))
+        {
+            return $"{AlternateText} {@alt}";
+        }
+
+        return AlternateText;
+    }
+
+    protected override string GetComponentCssClass()
+    {
+        return "width: 2rem ; height: 2rem; display:inline-block";
+        // return "rz-gravatar";
+    }
+}
+
