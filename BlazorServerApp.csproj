@@ -9,6 +9,7 @@
     <ItemGroup>
         <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.5"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.5"/>
+        <PackageReference Include="PSC.Blazor.Components.BrowserDetect" Version="1.0.14" />
         <PackageReference Include="Radzen.Blazor" Version="4.31.3"/>
     </ItemGroup>
 

@@ -5,7 +5,7 @@
 <PageTitle>Index</PageTitle>
 
 <RadzenText Text="Hello World!" TextStyle="TextStyle.H2"/>
-
+<BrowserDetect @bind-BrowserInfo="@_browserDetect"/>
 <RadzenButton Text="popo" Click="@(() => ToggleChange(false))"/>
 <RadzenButton Click="radzenButtonClick" Text="Hi"/>
 <RadzenToggleButton Change="ToggleChange" Text="On Air" MouseEnter="@ShowToolTip"/>
@@ -18,13 +18,38 @@
         </RadzenDataGridColumn>
     </Columns>
 </RadzenDataGrid>
-<SurveyPrompt Title="How is Blazor working for you?"/>
+<SurveyPrompt Title="How is Blazor working for you? " />
+<RadzenStack Orientation="Orientation.Vertical" Gap="10px">
+    <RadzenFormField Text="isDesktop" Variant="@Variant.Outlined">
+        <RadzenText Text="@_browserDetect?.IsDesktop.ToString()" Style="width: 300px; height: 1.5rem" class="rz-m-2"/>
+    </RadzenFormField>
+    <RadzenFormField Text="isMobile" Variant="@Variant.Outlined">
+        <RadzenText Text="@_browserDetect?.IsMobile.ToString()" Style="width: 300px; height: 1.5rem" class="rz-m-2"/>
+    </RadzenFormField>
+    <RadzenFormField Text="isTablette" Variant="@Variant.Outlined">
+        <RadzenText Text="@_browserDetect?.IsTablet.ToString()" Style="width: 300px; height: 1.5rem" class="rz-m-2"/>
+    </RadzenFormField>
+    <RadzenFormField Text="OS name" Variant="@Variant.Outlined">
+        <RadzenText Text="@_browserDetect?.OSName" Style="width: 300px; height: 1.5rem" class="rz-m-2"/>
+    </RadzenFormField>
+    <RadzenFormField Text="GPU render" Variant="@Variant.Outlined">
+        <RadzenText Text="@_browserDetect?.GPURenderer" Style="width: 300px; height: 1.5rem" class="rz-m-2"/>
+    </RadzenFormField>
+    <RadzenFormField Text="screenResolution" Variant="@Variant.Outlined" >
+        <RadzenText Text="@_browserDetect?.ScreenResolution" Style="width: 300px; height: 1.5rem" class="rz-m-2"/>
+    </RadzenFormField>
+    <RadzenFormField Text="BrowserName" Variant="@Variant.Outlined">
+        <RadzenText Text="@_browserDetect?.BrowserName"Style="width: 300px; height: 1.5rem" class="rz-m-2"/>
+    </RadzenFormField>
+</RadzenStack>
 
 
 @code {
     bool sideBarExpanded = true;
     private RadzenSwitch swi;
     private string[] data;
+
+    BrowserInfo? _browserDetect;
 
     void radzenButtonClick()
     {

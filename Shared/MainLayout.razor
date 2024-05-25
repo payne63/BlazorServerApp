@@ -7,6 +7,8 @@
 <RadzenComponents/>
 
 <PageTitle>BlazorServerApp</PageTitle>
+
+
 <RadzenLayout>
     @* <RadzenHeader>
 	<RadzenRow Style="height:40px">
@@ -23,26 +25,28 @@
 	</RadzenRow>
 	</RadzenHeader> *@
     <RadzenSidebar Responsive="false" Style="width: max-content ; height:100%">
-        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0px">
-            <RadzenSidebarToggle Click="@(() => _sidebarExpanded = !_sidebarExpanded)"
-                                 Icon="@(_sidebarExpanded ? "menu_open" : "menu")"
-                                 Style=" font-size:4em " class="rz-m-0"/>
-            <RadzenText Text="Blavitech" Visible="@(_sidebarExpanded)"
-                        Style="font-weight:bold ; font-size:22px" class="rz-m-2"/>
-        </RadzenStack>
-        <RadzenPanelMenu DisplayStyle="@(_sidebarExpanded ? MenuItemDisplayStyle.IconAndText : MenuItemDisplayStyle.Icon)" ShowArrow="false">
-            <RadzenPanelMenuItem Text="Index" Icon="home" Path=""/>
-            <RadzenPanelMenuItem Text="Counter" Icon="dashboard" Path="counter"/>
-            <RadzenPanelMenuItem Text="FetchData" Icon="cloud" Path="fetchdata"/>
-            <RadzenPanelMenuItem Text="test2" Icon="bug_report" Path="test2"/>
-            <RadzenPanelMenuItem Text="Login" Icon="login" Path="login"/>
-            <RadzenPanelMenuItem Text="Contacts" Icon="people" Path="contacts"/>
-            <RadzenPanelMenuItem Text="UI Fundamentals" Icon="auto_awesome">
-                <RadzenPanelMenuItem Text="Thèmes" Icon="color_lens"/>
-                <RadzenPanelMenuItem Text="Colors" Icon="invert_colors"/>
-            </RadzenPanelMenuItem>
-            <RadzenPanelMenuItem Text="Paramètres" Icon="settings" Path="settings"/>
-        </RadzenPanelMenu>
+        <div class="d-print-none">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0px">
+                <RadzenSidebarToggle Click="@(() => _sidebarExpanded = !_sidebarExpanded)"
+                                     Icon="@(_sidebarExpanded ? "menu_open" : "menu")"
+                                     Style=" font-size:4em " class="rz-m-0"/>
+                <RadzenText Text="Blavitech" Visible="@(_sidebarExpanded)"
+                            Style="font-weight:bold ; font-size:22px" class="rz-m-2"/>
+            </RadzenStack>
+            <RadzenPanelMenu DisplayStyle="@(_sidebarExpanded ? MenuItemDisplayStyle.IconAndText : MenuItemDisplayStyle.Icon)" ShowArrow="false">
+                <RadzenPanelMenuItem Text="Index" Icon="home" Path=""/>
+                <RadzenPanelMenuItem Text="Counter" Icon="dashboard" Path="counter"/>
+                <RadzenPanelMenuItem Text="FetchData" Icon="cloud" Path="fetchdata"/>
+                <RadzenPanelMenuItem Text="test2" Icon="bug_report" Path="test2"/>
+                <RadzenPanelMenuItem Text="Login" Icon="login" Path="login"/>
+                <RadzenPanelMenuItem Text="Contacts" Icon="people" Path="contacts"/>
+                <RadzenPanelMenuItem Text="UI Fundamentals" Icon="auto_awesome">
+                    <RadzenPanelMenuItem Text="Thèmes" Icon="color_lens"/>
+                    <RadzenPanelMenuItem Text="Colors" Icon="invert_colors"/>
+                </RadzenPanelMenuItem>
+                <RadzenPanelMenuItem Text="Paramètres" Icon="settings" Path="settings"/>
+            </RadzenPanelMenu>
+        </div>
     </RadzenSidebar>
     <RadzenBody>
         <ChildContent>
@@ -56,11 +60,12 @@
         <RadzenFooter Visible="@_sidebarExpanded" Style=" height:150px" class="rz-p-3">
             <RadzenStack Orientation="Orientation.Horizontal">
                 <RadzenText Text="Console:" Style="font-weight:bold"/>
-                <EventConsole @ref="@console"  class="rz-m-0"/>
+                <EventConsole @ref="@console" class="rz-m-0"/>
             </RadzenStack>
         </RadzenFooter>
     }
 </RadzenLayout>
+
 
 @code {
     bool _sidebarExpanded = true;
