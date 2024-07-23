@@ -19,7 +19,7 @@ public class Program
 
         builder.Services.AddDbContext<DataBaseContext>();
         builder.Services.AddScoped<DataBaseService>();
-        builder.Services.AddScoped<ThemeService>();
+        builder.Services.AddScoped<Services.ThemeService>();
         builder.Services.AddScoped<EventConsoleService>();
         // builder.Services.AddSingleton<EventConsoleService>();
 
