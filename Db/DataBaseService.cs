@@ -32,5 +32,5 @@ public class DataBaseService
 
     public void Save() => GetDb.SaveChanges();
 
-    private void CompagnyToUpper(ContactModel contact) => contact.Company = contact.Company.ToUpper();
+    private void CompagnyToUpper(ContactModel contact) => contact.Company= contact.Company == null?  contact.Company : contact.Company.ToUpper();
 }

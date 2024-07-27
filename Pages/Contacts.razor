@@ -14,6 +14,7 @@
         </RadzenSelectBar>
         <RadzenButton ButtonStyle="ButtonStyle.Primary" Icon="add_circle_outline" Text="Add Contact"
                       Click="@InsertRow" Disabled="@(_isEditMode)" Visible="@(_selectedViewType == ViewType.Grid)"/>
+        <RadzenButton ButtonStyle="ButtonStyle.Primary" Text="Add Fake User" Click="@CreateFakeUser"/>
 </RadzenStack>
 </RadzenCard>
 
@@ -238,5 +239,15 @@ else
     {
         dataBaseService.Update(contactModel);
         dataBaseService.Save();
+    }
+
+    async Task CreateFakeUser(MouseEventArgs mouseEventArgs)
+    {
+        var fakeModel = new Bogus.Faker<ContactModel>("fr").Rules(((faker, model) => { model.Name = faker.Person.LastName; }));
+        var model = fakeModel.Generate();
+        dataBaseService.Add(model);
+        dataBaseService.Save();
+        _models = dataBaseService.GetAllContacts();
+        
     }
 }
