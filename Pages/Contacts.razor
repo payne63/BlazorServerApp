@@ -29,7 +29,7 @@ else if (_selectedViewType == ViewType.Grid)
     <RadzenDataGrid AllowMultiColumnSorting="true" AllowAlternatingRows="false" AllowFiltering="true"
                     FilterMode="FilterMode.Simple" AllowSorting="true" AllowColumnResize="true"
                     FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
-                    PagerHorizontalAlign="HorizontalAlign.Left" ShowPagingSummary="true" GridLines="DataGridGridLines.Vertical"
+                    PagerHorizontalAlign="HorizontalAlign.Left" ShowPagingSummary="true" GridLines="DataGridGridLines.Vertical" LoadData="@LoadData" IsLoading="@_isLoading" Count="@_count"
                     Data="@_models" ColumnWidth="300px" LogicalFilterOperator="LogicalFilterOperator.Or"
                     SelectionMode="DataGridSelectionMode.Single" TItem="ContactModel" @ref="_radzenDataGrid"
                     Density="Density.Compact" RowCreate="@OnCreateRow" RowUpdate="@OnUpdateRow" class="rz-border-radius-1">
@@ -101,7 +101,7 @@ else if (_selectedViewType == ViewType.Grid)
 }
 else
 {
-    <RadzenDataList WrapItems="true" AllowPaging="true" Data="@_models" TItem="@ContactModel" class="rz-p-0">
+    <RadzenDataList WrapItems="true" AllowPaging="true" Data="@_models" TItem="@ContactModel" class="rz-p-0" @ref="_radzenDataList">
         <Template Context="contact">
             <RadzenCard Style="padding: 10px;margin: 2px ;flex: 1 ;width: 250px; max-width: 250px ;min-width: 250px">
                 <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
@@ -152,12 +152,14 @@ else
     ViewType _selectedViewType;
     
     RadzenDataGrid<ContactModel>? _radzenDataGrid;
+    RadzenDataList<ContactModel>? _radzenDataList;
     IEnumerable<ContactModel>? _models;
     bool _isEditMode;
+    bool _isLoading = true;
+    int _count;
 
     protected override Task OnInitializedAsync()
     {
-        _models = dataBaseService.GetAllContacts();
         return Task.CompletedTask;
     }
 
@@ -243,11 +245,29 @@ else
 
     async Task CreateFakeUser(MouseEventArgs mouseEventArgs)
     {
-        var fakeModel = new Bogus.Faker<ContactModel>("fr").Rules(((faker, model) => { model.Name = faker.Person.LastName; }));
+        var fakeModel = new Bogus.Faker<ContactModel>("fr")
+            .Rules(((faker, model) => { model.Name = faker.Person.LastName; }))
+            .Rules(((faker, model) => { model.Company = faker.Company.CompanyName(); }))
+            .Rules(((faker, model) => { model.Ismale = faker.Person.Gender ==  0; }))
+            .Rules(((faker, model) => { model.Surname = faker.Person.UserName; }))
+            .Rules(((faker, model) => { model.Mail = faker.Person.Email; }))
+            .Rules(((faker, model) => { model.Job = faker.Person.Company.Bs; }))
+            .Rules(((faker, model) => { model.Phone1 = faker.Person.Phone; }))
+            .Rules(((faker, model) => { model.Phone2 = faker.Person.Phone; }));
         var model = fakeModel.Generate();
         dataBaseService.Add(model);
         dataBaseService.Save();
         _models = dataBaseService.GetAllContacts();
         
+        
+    }
+
+    
+    async Task LoadData(LoadDataArgs obj)
+    {
+        await Task.Yield();
+        _models = dataBaseService.GetAllContacts();
+        _count = _models.Count();
+        _isLoading = false;
     }
 }
