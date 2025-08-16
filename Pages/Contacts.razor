@@ -149,7 +149,7 @@ else
         Grid
     }
 
-    ViewType _selectedViewType;
+    ViewType _selectedViewType = ViewType.Grid;
     
     RadzenDataGrid<ContactModel>? _radzenDataGrid;
     RadzenDataList<ContactModel>? _radzenDataList;
@@ -265,7 +265,7 @@ else
     
     async Task LoadData(LoadDataArgs obj)
     {
-        await Task.Yield();
+        //await Task.Yield();
         _models = dataBaseService.GetAllContacts();
         _count = _models.Count();
         _isLoading = false;

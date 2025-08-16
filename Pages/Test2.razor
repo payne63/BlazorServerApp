@@ -16,6 +16,7 @@
     <RadzenYearPlannerView StartMonth="@startMonth"/>
     <RadzenYearTimelineView StartMonth="@startMonth"/>
     <RadzenYearView StartMonth="@startMonth"/>
+    <RadzenDayView StartTime="@timeSpanZero" EndTime="@timeSpanMax" MinutesPerSlot="10"/>    
 </RadzenScheduler>
 <RadzenButton Style="cursor: col-resize" />
 
@@ -24,10 +25,13 @@
 
 @code {
 
-    RadzenScheduler<Appointment> scheduler;
+        RadzenScheduler<Appointment> scheduler;
+        TimeSpan timeSpanZero = new TimeSpan(1, 0,0);
+        TimeSpan timeSpanMax = new TimeSpan(24,0,0);
 
-    // EventConsole console;
-    Dictionary<DateTime, string> events = new();
+        // EventConsole console;
+    Dictionary
+    <DateTime, string> events = new();
     Month startMonth = Month.January;
 
     readonly List<Appointment> appointments = new List<Appointment>

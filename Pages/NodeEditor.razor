@@ -1,0 +1,389 @@
+@page "/node-editor"
+@using Microsoft.AspNetCore.Components.Web
+@using Radzen.Blazor.Rendering
+@inject IJSRuntime JS
+
+<h3>Node Editor (Prototype)</h3>
+<p class="ne-help">Pour connecter: maintenez le bouton gauche de la souris sur une sortie (point jaune droit) et relâchez sur une entrée (point jaune gauche). Relâchez en dehors pour annuler la connexion en cours.</p>
+
+<div @ref="_containerRef"
+     class="ne-container"
+     @onmousemove="OnMouseMove"
+     @onmouseup="OnMouseUp"
+     @onmouseleave="OnMouseUp"
+     @onclick="OnBackgroundClick"
+     @oncontextmenu:preventDefault
+     @oncontextmenu="OnContextMenu">
+    
+    <svg class="ne-svg">
+        @* Render existing connections *@
+        @foreach (var link in Links)
+        {
+            var s = GetPortPosition(link.SourceNodeId, true);
+            var t = GetPortPosition(link.TargetNodeId, false);
+            <path d="@BezierPath((int)s.X, (int)s.Y, (int)t.X, (int)t.Y)" class="ne-link" />
+        }
+
+        @* Render pending link while user is connecting (but not while dragging a nodec) *@
+        @if (_pendingSourceNodeId is not null && _draggingNodeId is null)
+        {
+            var pos = GetPortPosition(_pendingSourceNodeId.Value, true);
+            var sx = pos.X; var sy = pos.Y;
+            <path d="@BezierPath((int)sx, (int)sy, (int)_mouseX, (int)_mouseY)" class="ne-link ne-link-pending" />
+        }
+    </svg>
+
+    @* Render nodes *@
+    @foreach (var node in Nodes)
+    {
+        <div class="ne-node" style="left:@node.Xpx; top:@node.Ypx;" 
+             @onmousedown="(e) => OnNodeMouseDown(e, node.Id)">
+            <div class="ne-node-header">@node.Title</div>
+            @* <RadzenTextBox  @bind-Value="@node.Title" style="width:100%; height:100%;"/> *@
+            <div class="ne-node-content">
+                <div class=@($"ne-port ne-out {(HasOutgoing(node.Id) ? "ne-port-connected" : "")}")
+                     title="Output"
+                     @onmousedown:stopPropagation
+                     @onmouseup:stopPropagation
+                     @onmousedown="(e) => OnOutPortMouseDown(e, node.Id)"></div>
+                <div class=@($"ne-port ne-in {(HasIncoming(node.Id) ? "ne-port-connected" : "")}")
+                     title="Input"
+                     @onmousedown:stopPropagation
+                     @onmouseup:stopPropagation
+                     @onmouseup="(e) => OnInPortMouseUp(e, node.Id)"></div>
+            </div>
+        </div>
+    }
+
+    @if (_showContextMenu)
+    {
+        <div class="ne-contextmenu" style=@($"left:{(int)_ctxX}px; top:{(int)_ctxY}px;")>
+            <div class="ne-cm-item" @onclick="AddNodeHere">Ajouter un nœud ici</div>
+        </div>
+    }
+</div>
+
+<div class="ne-mouse-overlay">
+    <div>Mouse (container): X=@((int)Math.Round(_mouseX)) Y=@((int)Math.Round(_mouseY))</div>
+    <div>Mouse (page): X=@((int)Math.Round(_mouseX + _containerLeft)) Y=@((int)Math.Round(_mouseY + _containerTop))</div>
+</div>
+
+@code {
+    private ElementReference _containerRef;
+    private double _containerLeft;
+    private double _containerTop;
+
+    private readonly List<NodeVm> Nodes = new()
+    {
+        new NodeVm(1, "Start", 80, 80),
+        new NodeVm(2, "Process", 360, 180),
+        new NodeVm(3, "Result", 700, 120)
+    };
+
+    private readonly List<LinkVm> Links = new();
+
+    private int? _draggingNodeId;
+    private double _dragOffsetX;
+    private double _dragOffsetY;
+
+    private int? _pendingSourceNodeId;
+
+    private double _mouseX;
+    private double _mouseY;
+
+    private bool _showContextMenu;
+    private double _ctxX;
+    private double _ctxY;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var rect = await JS.InvokeAsync<DomRect>("nodeEditor.getRect", _containerRef);
+            _containerLeft = rect.left;
+            _containerTop = rect.top;
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnNodeMouseDown(MouseEventArgs e, int nodeId)
+    {
+        // Refresh container rect to handle any page scroll/resize before drag starts
+        var rect = await JS.InvokeAsync<DomRect>("nodeEditor.getRect", _containerRef);
+        _containerLeft = rect.left;
+        _containerTop = rect.top;
+
+        _draggingNodeId = nodeId;
+        var node = Nodes.First(n => n.Id == nodeId);
+        var mx = LocalPos(e).X;
+        var my = LocalPos(e).Y;
+        _dragOffsetX = mx - node.X;
+        _dragOffsetY = my - node.Y;
+    }
+
+    private void OnMouseMove(MouseEventArgs e)
+    {
+        var mx = LocalPos(e).X;
+        var my = LocalPos(e).Y;
+        _mouseX = mx;
+        _mouseY = my;
+
+        if (_draggingNodeId is int id)
+        {
+            var node = Nodes.First(n => n.Id == id);
+            node.X = Math.Max(0, mx - _dragOffsetX);
+            node.Y = Math.Max(0, my - _dragOffsetY);
+        }
+    }
+
+    private void OnMouseUp(MouseEventArgs _)
+    {
+        // End drag operations
+        _draggingNodeId = null;
+        // If we had a pending link and mouseup happened on the background (not on an input), cancel it
+        if (_pendingSourceNodeId is not null)
+        {
+            _pendingSourceNodeId = null;
+        }
+    }
+
+    // New drag-to-connect handlers
+    private void OnOutPortMouseDown(MouseEventArgs e, int sourceNodeId)
+    {
+        // Only start linking on left button
+        if (e.Button == 0)
+        {
+            _pendingSourceNodeId = sourceNodeId;
+        }
+    }
+
+    private void OnInPortMouseUp(MouseEventArgs e, int targetNodeId)
+    {
+        // Complete link only on left button release
+        if( e.Button != 0) return; 
+        if (_pendingSourceNodeId is int sourceNodeId)
+        {
+            if (sourceNodeId != targetNodeId)
+            {
+                // replace existing incoming for this input
+                RemoveIncoming(targetNodeId);
+                if (!Links.Any(l => l.SourceNodeId == sourceNodeId && l.TargetNodeId == targetNodeId))
+                {
+                    Links.Add(new LinkVm(sourceNodeId, targetNodeId));
+                }
+            }
+            _pendingSourceNodeId = null;
+        }
+        else {
+            RemoveIncoming(targetNodeId);
+        }
+    }
+
+    // Legacy handlers kept for potential external call sites
+    private void StartLink(int sourceNodeId) => _pendingSourceNodeId = sourceNodeId;
+    private void CompleteLink(int targetNodeId)
+    {
+        OnInPortMouseUp(new MouseEventArgs { Button = 0 }, targetNodeId);
+    }
+
+    private void OnBackgroundClick(MouseEventArgs _)
+    {
+        // cancel pending link when clicking background
+        _pendingSourceNodeId = null;
+        _showContextMenu = false;
+    }
+
+    private bool HasIncoming(int nodeId) => Links.Any(l => l.TargetNodeId == nodeId);
+    private bool HasOutgoing(int nodeId) => Links.Any(l => l.SourceNodeId == nodeId);
+
+    private void RemoveIncoming(int targetNodeId)
+    {
+        var existing = Links.FirstOrDefault(l => l.TargetNodeId == targetNodeId);
+        if (existing is not null)
+        {
+            Links.Remove(existing);
+        }
+    }
+
+    private DomPoint GetPortPosition(int nodeId, bool isOutput)
+    {
+        var n = Nodes.First(n => n.Id == nodeId);
+        var x = n.X + (isOutput ? NodeVm.OutPortOffsetX : NodeVm.InPortOffsetX);
+        var y = n.Y + (isOutput ? NodeVm.OutPortOffsetY : NodeVm.InPortOffsetY);
+        return new DomPoint(x, y);
+    }
+
+    private DomPoint LocalPos(MouseEventArgs e)
+    {
+        // Use client coordinates minus container rect so math is consistent regardless of event target
+        var x = e.ClientX - _containerLeft;
+        var y = e.ClientY - _containerTop;
+        return new DomPoint(x, y);
+    }
+
+    private static string BezierPath(int sx, int sy, int tx, int ty)
+    {
+        var dx = Math.Abs(tx - sx);
+        var cx = (int)(dx * 0.5);
+        var c1x = sx + cx;
+        var c1y = sy;
+        var c2x = tx - cx;
+        var c2y = ty;
+        return $"M {sx},{sy} C {c1x},{c1y} {c2x},{c2y} {tx},{ty}";
+    }
+
+    private void OnContextMenu(MouseEventArgs e)
+    {
+        var p = LocalPos(e);
+        _ctxX = p.X;
+        // _ctxX = _mouseX;
+        _ctxY = p.Y;
+        // _ctxY = _mouseY;
+        _showContextMenu = true;
+        StateHasChanged();
+    }
+
+    private void AddNodeHere()
+    {
+        var newId = Nodes.Count == 0 ? 1 : Nodes.Max(n => n.Id) + 1;
+        var title = $"Nœud {newId}";
+        var x = (int)Math.Max(0, _ctxX - NodeVm.Width / 2);
+        var y = (int)Math.Max(0, _ctxY - NodeVm.Height / 2);
+        Nodes.Add(new NodeVm(newId, title, (float)x, (float)y));
+        _showContextMenu = false;
+        _pendingSourceNodeId = null;
+    }
+
+    private record struct DomRect(double left, double top);
+    private record struct DomPoint(double X, double Y);
+
+    private class NodeVm
+    {
+        public const double Width = 160;
+        public const double Height = 80;
+        public const double InPortOffsetX = 10;
+        public const double InPortOffsetY = Height / 2;
+        public const double OutPortOffsetX = Width - 10;
+        public const double OutPortOffsetY = Height / 2;
+
+        public int Id { get; }
+        public string Title { get; set; }
+        public double X { get; set; }
+        public double Y { get; set; }
+
+        public string Xpx => X + "px";
+        public string Ypx => Y + "px";
+
+        public NodeVm(int id, string title, float x, float y)
+        {
+            Id = id;
+            Title = title;
+            X = x;
+            Y = y;
+        }
+    }
+
+    private record LinkVm(int SourceNodeId, int TargetNodeId);
+}
+
+<style>
+.ne-container {
+    position: relative;
+    width: 100%;
+    height: calc(100vh - 140px);
+    border: 1px solid #ccc;
+    /*background: repeating-linear-gradient(0deg, #f9f9fb, #f9f9fb 20px, #f1f1f5 20px, #f1f1f5 40px),*/
+    /*            repeating-linear-gradient(90deg, #f9f9fb, #f9f9fb 20px, #f1f1f5 20px, #f1f1f5 40px);*/
+    background: #3e3e4f;
+    overflow: hidden;
+}
+
+.ne-svg {
+    position: absolute;
+    left: 0; top: 0; right: 0; bottom: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+}
+
+.ne-link {
+    stroke: #4a90e2;
+    stroke-width: 3;
+    fill: none;
+}
+
+.ne-link-pending {
+    stroke-dasharray: 6 6;
+}
+
+.ne-node {
+    position: absolute;
+    width: 160px;
+    height: 80px;
+    background: #2b2d42;
+    color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    user-select: none;
+    cursor: grab;
+}
+.ne-node:active { cursor: grabbing; }
+
+.ne-node-header {
+    font-weight: 600;
+    padding: 6px 10px;
+    background: #1f2233;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+.ne-node-content {
+    position: relative;
+    height: calc(100% - 30px);
+}
+
+.ne-port {
+    position: absolute;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: #ffcc00;
+    border: 2px solid #333;
+}
+.ne-port-connected { background: #4caf50; }
+.ne-port.ne-in { left: -6px; top: calc(50% - 16px); cursor: cell }
+.ne-port.ne-out { right: -6px; top: calc(50% - 16px); cursor:cell}
+
+.ne-mouse-overlay {
+    position: fixed;
+    top: 8px;
+    right: 8px;
+    background: rgba(0,0,0,0.7);
+    color: #fff;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-size: 12px;
+    line-height: 1.4;
+    padding: 6px 8px;
+    border-radius: 6px;
+    z-index: 9999;
+    pointer-events: none;
+}
+.ne-mouse-overlay div { white-space: nowrap; }
+
+/* Context menu */
+.ne-contextmenu {
+    position: absolute;
+    background: #ffffff;
+    color: #222;
+    border: 1px solid rgba(0,0,0,0.15);
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    min-width: 180px;
+    z-index: 1000;
+}
+.ne-cm-item {
+    padding: 8px 12px;
+    cursor: pointer;
+}
+.ne-cm-item:hover {
+    background: #f2f4f8;
+}
+</style>
