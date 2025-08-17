@@ -41,17 +41,17 @@
             <div class="ne-node-header">@node.Title</div>
             @* <RadzenTextBox  @bind-Value="@node.Title" style="width:100%; height:100%;"/> *@
             <div class="ne-node-content">
+            </div>
                 <div class=@($"ne-port ne-out {(HasOutgoing(node.Id) ? "ne-port-connected" : "")}")
                      title="Output"
                      @onmousedown:stopPropagation
                      @onmouseup:stopPropagation
                      @onmousedown="(e) => OnOutPortMouseDown(e, node.Id)"></div>
-                <div class=@($"ne-port ne-in {(HasIncoming(node.Id) ? "ne-port-connected" : "")}")
+                <div class=@($"ne-port ne-in {(HasIncoming(node.Id) ? "ne-port-deconnected" : "")} ")
                      title="Input"
                      @onmousedown:stopPropagation
                      @onmouseup:stopPropagation
                      @onmouseup="(e) => OnInPortMouseUp(e, node.Id)"></div>
-            </div>
         </div>
     }
 
@@ -325,8 +325,10 @@
     box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     user-select: none;
     cursor: grab;
+    border: 1px solid transparent;
 }
 .ne-node:active { cursor: grabbing; }
+.ne-node:hover { border: 1px solid #fff; }
 
 .ne-node-header {
     font-weight: 600;
@@ -347,10 +349,12 @@
     border-radius: 50%;
     background: #ffcc00;
     border: 2px solid #333;
+    cursor:cell;
 }
 .ne-port-connected { background: #4caf50; }
-.ne-port.ne-in { left: -6px; top: calc(50% - 16px); cursor: cell }
-.ne-port.ne-out { right: -6px; top: calc(50% - 16px); cursor:cell}
+.ne-port.ne-in { left: -6px; top: calc(50% - 6px); }
+.ne-port.ne-out { right: -6px; top: calc(50% - 6px );}
+.ne-port-deconnected {background: #4caf50; cursor: not-allowed;}
 
 .ne-mouse-overlay {
     position: fixed;
