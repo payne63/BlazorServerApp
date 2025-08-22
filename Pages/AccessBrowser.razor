@@ -1,0 +1,129 @@
+@page "/access-db"
+@using System.Data
+@inject BlazorServerApp.Services.AccessDatabaseService AccessDb
+
+<h3>Explorateur Access (DatabaseAVITECH.accdb)</h3>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    @* <div class="alert alert-danger">@_error</div> *@
+    <RadzenAlert AllowClose="false" AlertStyle="AlertStyle.Danger" Variant="Variant.Flat">@_error</RadzenAlert>
+}
+
+<div class="row">
+    <div class="col-1">
+        <h5>Tables</h5>
+        @if (_tables == null)
+        {
+            <p>Chargement des tables…</p>
+        }
+        else if (_tables.Count == 0)
+        {
+            <p>Aucune table trouvée.</p>
+        }
+        else
+        {
+            <ul class="list-group">
+                @foreach (var t in _tables)
+                {
+                    <li class="list-group-item @(t == _selectedTable ? "active" : string.Empty)" @onclick="(() => SelectTable(t))" style="cursor:pointer">@t</li>
+                }
+            </ul>
+        }
+    </div>
+    <div class="col-9">
+        <div class="d-flex align-items-center mb-2">
+            <div class="me-2">Table sélectionnée:</div>
+            <strong class="me-3">@(_selectedTable ?? "—")</strong>
+            <div class="input-group" style="max-width:300px">
+                <span class="input-group-text">TOP</span>
+                <input class="form-control" type="number" min="1" @bind="_top" />
+                <button class="btn btn-primary" @onclick="Reload">Recharger</button>
+            </div>
+        </div>
+
+        @if (_data == null)
+        {
+            <p>Sélectionnez une table pour voir les données.</p>
+        }
+        else
+        {
+            <div style="overflow:auto; max-height:65vh; border:1px solid #fff ">
+                <table class="table table-sm table-striped table-hover">
+                    <thead>
+                    <tr>
+                        @foreach (DataColumn col in _data.Columns)
+                        {
+                            <th style="color: aliceblue">@col.ColumnName</th>
+                        }
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (DataRow row in _data.Rows)
+                    {
+                        <tr>
+                            @foreach (var obj in row.ItemArray)
+                            {
+                                <td style="color: aliceblue">@(obj ?? "")</td>
+                            }
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private IList<string>? _tables;
+    private string? _selectedTable;
+    private DataTable? _data;
+    private int _top = 100;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _error = null;
+            _tables = await AccessDb.GetTablesAsync();
+            // if (_tables.Count > 0)
+            // {
+            //     await SelectTable(_tables.First());
+            // }
+        }
+        catch (Exception ex) {
+            _data = null;
+            _error = ex.Message;
+        }
+    }
+
+    private async Task Reload()
+    {
+        if (!string.IsNullOrWhiteSpace(_selectedTable))
+        {
+            await LoadData(_selectedTable);
+        }
+    }
+
+    private async Task SelectTable(string table)
+    {
+        _selectedTable = table;
+        await LoadData(table);
+    }
+
+    private async Task LoadData(string table)
+    {
+        try
+        {
+            _error = null;
+            // Use the enhanced method that resolves foreign keys to human-readable values
+            _data = await AccessDb.GetTopWithLookupsAsync(table, _top);
+        }
+        catch (Exception ex)
+        {
+            _error = "from LoadData "+ ex.Message;
+        }
+    }
+}

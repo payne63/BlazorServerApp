@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
     <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net8.0-windows</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
     </PropertyGroup>
@@ -12,10 +12,14 @@
         <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.5"/>
         <PackageReference Include="PSC.Blazor.Components.BrowserDetect" Version="1.0.14" />
         <PackageReference Include="Radzen.Blazor" Version="5.0.1" />
+        <PackageReference Include="Microsoft.Windows.Compatibility" Version="8.0.0" />
     </ItemGroup>
 
     <ItemGroup>
         <None Update="Db\DBcontacts.db">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="database\DatabaseAVITECH.accdb">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
     </ItemGroup>

@@ -18,12 +18,21 @@ public class Program
         builder.Services.AddRadzenComponents();
 
         builder.Services.AddDbContext<DataBaseContext>();
+        builder.Services.AddDbContext<PeopleContext>();
         builder.Services.AddScoped<DataBaseService>();
         builder.Services.AddScoped<Services.ThemeService>();
         builder.Services.AddScoped<EventConsoleService>();
+        builder.Services.AddScoped<AccessDatabaseService>();
         // builder.Services.AddSingleton<EventConsoleService>();
 
         var app = builder.Build();
+
+        // Ensure the People database is created on startup
+        using (var scope = app.Services.CreateScope())
+        {
+            var peopleContext = scope.ServiceProvider.GetRequiredService<PeopleContext>();
+            peopleContext.Database.EnsureCreated();
+        }
 
         // Configure the HTTP request pipeline.
         if (!app.Environment.IsDevelopment())

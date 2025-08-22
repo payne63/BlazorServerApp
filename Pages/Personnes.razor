@@ -1,0 +1,120 @@
+@page "/personnes"
+@using BlazorServerApp.Db
+@inject PeopleContext Db
+
+<PageTitle>Gestion des personnes</PageTitle>
+
+<RadzenHeading Size="HeadingSize.H1" Text="Gestion des personnes" />
+
+<RadzenStack Orientation="Orientation.Vertical" Gap="10px">
+    <RadzenButton Icon="add" Text="Ajouter" Click="AddRow"  Style="width:150px" />
+    <RadzenDataGrid TItem="PersonModel" Data="people" @ref="grid" EditMode="DataGridEditMode.Single" RowUpdate="OnUpdateRow" RowCreate="OnCreateRow" RowRemove="OnDeleteRow" AllowFiltering="true" AllowPaging="true" PageSize="10" AllowSorting="true">
+        <Columns>
+            <RadzenDataGridColumn TItem="PersonModel" Property="Nom" Title="Nom">
+                <EditTemplate Context="person">
+                    <RadzenTextBox @ref="NameEditionTextBox" @bind-Value="person.Nom" Style="width:100%" Name="Nom" />
+                    <RadzenRequiredValidator Text="Nom requis" Component="Nom" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="PersonModel" Property="Prenom" Title="Prénom">
+                <EditTemplate Context="person">
+                    <RadzenTextBox @bind-Value="person.Prenom" Style="width:100%" Name="Prenom" />
+                    <RadzenRequiredValidator Text="Prénom requis" Component="Prenom" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="PersonModel" Property="Service" Title="Service">
+                <EditTemplate Context="person">
+                    <RadzenTextBox @bind-Value="person.Service" Style="width:100%" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="PersonModel" Property="Qualification" Title="Qualification">
+                <EditTemplate Context="person">
+                    <RadzenTextBox @bind-Value="person.Qualification" Style="width:100%" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="PersonModel" Context="person" TextAlign="TextAlign.Center" Width="140px">
+                <Template Context="person">
+                    <RadzenButton Icon="edit" Size="ButtonSize.Small" Click="() => grid.EditRow(person)" class="rz-mr-2" />
+                    <RadzenButton Icon="delete" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Danger" Click="() => DeleteRow(person)" />
+                </Template>
+                <EditTemplate Context="person">
+                    <RadzenButton Icon="save" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Primary" Click="() => OnSaveRow(person)" class="rz-mr-2" />
+                    <RadzenButton Icon="cancel" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light" Click="() => CancelEditRow(person)" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+</RadzenStack>
+
+@code {
+    RadzenDataGrid<PersonModel> grid;
+    List<PersonModel> people = new();
+    RadzenTextBox? NameEditionTextBox;
+
+    protected override void OnInitialized()
+    {
+        Db.Database.EnsureCreated();
+        people = Db.People.OrderBy(p => p.Nom).ThenBy(p => p.Prenom).ToList();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender && NameEditionTextBox is not null) {
+            await Task.Yield();
+            await NameEditionTextBox.FocusAsync();
+        }
+    }
+
+    async void AddRow() {
+        try {
+            var newPerson = new PersonModel { Nom = string.Empty, Prenom = string.Empty };
+            people.Add(newPerson);
+            await grid.Reload();
+            await grid.EditRow(newPerson);
+        }
+        catch (Exception e) {
+            throw; // TODO handle exception
+        }
+    }
+
+    async Task OnCreateRow(PersonModel person)
+    {
+        // Db.People.Add(person);
+        // await Db.SaveChangesAsync();
+    }
+
+    async Task OnSaveRow(PersonModel person) {
+        Db.People.Add(person);
+        await Db.SaveChangesAsync();
+        grid.CancelEditRow(person);
+        await grid.Reload();
+    }
+
+    async Task OnUpdateRow(PersonModel person)
+    {
+        Db.People.Update(person);
+        await Db.SaveChangesAsync();
+    }
+
+    async Task DeleteRow(PersonModel person)
+    {
+        if (people.Contains(person))
+        {
+            people.Remove(person);
+        }
+        Db.People.Remove(person);
+        await Db.SaveChangesAsync();
+        // await InvokeAsync(StateHasChanged);
+        await grid.Reload();
+    }
+
+    async Task OnDeleteRow(PersonModel person)
+    {
+        await DeleteRow(person);
+    }
+
+    async Task CancelEditRow(PersonModel person) {
+        grid.CancelEditRow(person);
+        people.Remove(person);
+        await grid.Reload();
+    }
+}

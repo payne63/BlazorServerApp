@@ -39,6 +39,8 @@
         <div class="ne-node" style="left:@node.Xpx; top:@node.Ypx;" 
              @onmousedown="(e) => OnNodeMouseDown(e, node.Id)">
             <div class="ne-node-header">@node.Title</div>
+            <RadzenText>@node.Title</RadzenText>
+            @* <input class="ne-node-header" value="@node.Title"/> *@
             @* <RadzenTextBox  @bind-Value="@node.Title" style="width:100%; height:100%;"/> *@
             <div class="ne-node-content">
             </div>

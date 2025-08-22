@@ -1,0 +1,5 @@
+[Bb]in/
+[Oo]bj/
+
+database/*
+Db/DBcontacts.db
