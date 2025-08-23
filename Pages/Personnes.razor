@@ -7,8 +7,8 @@
 <RadzenHeading Size="HeadingSize.H1" Text="Gestion des personnes" />
 
 <RadzenStack Orientation="Orientation.Vertical" Gap="10px">
-    <RadzenButton Icon="add" Text="Ajouter" Click="AddRow"  Style="width:150px" />
-    <RadzenDataGrid TItem="PersonModel" Data="people" @ref="grid" EditMode="DataGridEditMode.Single" RowUpdate="OnUpdateRow" RowCreate="OnCreateRow" RowRemove="OnDeleteRow" AllowFiltering="true" AllowPaging="true" PageSize="10" AllowSorting="true">
+    <RadzenButton Icon="add" Text="Ajouter" Click="AddRow" Style="width:150px"/>
+    <RadzenDataGrid TItem="PersonModel" Data="people" @ref="grid" EditMode="DataGridEditMode.Single"  RowEdit="model => enterInEditionMode=true" RowRemove="OnDeleteRow" AllowFiltering="true" AllowPaging="true" PageSize="10" AllowSorting="true">
         <Columns>
             <RadzenDataGridColumn TItem="PersonModel" Property="Nom" Title="Nom">
                 <EditTemplate Context="person">
@@ -23,18 +23,39 @@
                 </EditTemplate>
             </RadzenDataGridColumn>
             <RadzenDataGridColumn TItem="PersonModel" Property="Service" Title="Service">
+                <Template Context="person">
+                    @person.Service.GetDisplayName()
+                </Template>
                 <EditTemplate Context="person">
-                    <RadzenTextBox @bind-Value="person.Service" Style="width:100%" />
+                    <RadzenDropDown Data="@serviceItems"
+                                    TextProperty="Text"
+                                    ValueProperty="Value"
+                                    TValue="ServiceType"
+                                    @bind-Value="person.Service"
+                                    Name="Service"
+                                    Style="width:100%" />
+                    <RadzenRequiredValidator Text="Service requis" Component="Service" />
                 </EditTemplate>
             </RadzenDataGridColumn>
             <RadzenDataGridColumn TItem="PersonModel" Property="Qualification" Title="Qualification">
+                <Template Context="person">
+                    @GetQualificationText(person.Qualification)
+                </Template>
                 <EditTemplate Context="person">
-                    <RadzenTextBox @bind-Value="person.Qualification" Style="width:100%" />
+                    <RadzenDropDown Data="@qualificationItems"
+                                    TextProperty="Text"
+                                    ValueProperty="Value"
+                                    TValue="List<QualificationType>"
+                                    @bind-Value="selectedQualifications"
+                                    Multiple="true"
+                                    Name="Qualification"
+                                    Style="width:100%" />
+                    <RadzenRequiredValidator Text="Au moins une qualification" Component="Qualification" />
                 </EditTemplate>
             </RadzenDataGridColumn>
             <RadzenDataGridColumn TItem="PersonModel" Context="person" TextAlign="TextAlign.Center" Width="140px">
                 <Template Context="person">
-                    <RadzenButton Icon="edit" Size="ButtonSize.Small" Click="() => grid.EditRow(person)" class="rz-mr-2" />
+                    <RadzenButton Icon="edit" Size="ButtonSize.Small" Click="() => StartEdit(person)" class="rz-mr-2" />
                     <RadzenButton Icon="delete" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Danger" Click="() => DeleteRow(person)" />
                 </Template>
                 <EditTemplate Context="person">
@@ -50,49 +71,106 @@
     RadzenDataGrid<PersonModel> grid;
     List<PersonModel> people = new();
     RadzenTextBox? NameEditionTextBox;
+    bool enterInEditionMode = false;
+    bool enterInUpdateMode = false;
+
+    class ServiceItem { public ServiceType Value { get; set; } public string Text { get; set; } }
+    List<ServiceItem> serviceItems = new();
+
+    class QualificationItem { public QualificationType Value { get; set; } public string Text { get; set; } }
+    List<QualificationItem> qualificationItems = new();
+    List<QualificationType> selectedQualifications = new();
+    PersonModel? editingPerson = null;
 
     protected override void OnInitialized()
     {
         Db.Database.EnsureCreated();
         people = Db.People.OrderBy(p => p.Nom).ThenBy(p => p.Prenom).ToList();
+        serviceItems = Enum.GetValues<ServiceType>()
+            .Select(v => new ServiceItem { Value = v, Text = v.GetDisplayName() })
+            .ToList();
+        qualificationItems = Enum.GetValues<QualificationType>()
+            .Where(q => q != QualificationType.None)
+            .Select(v => new QualificationItem { Value = v, Text = ((Enum)(object)v).GetDisplayName() })
+            .ToList();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
-        if (firstRender && NameEditionTextBox is not null) {
+        if ( NameEditionTextBox is not null && enterInEditionMode) {
             await Task.Yield();
-            await NameEditionTextBox.FocusAsync();
+            await NameEditionTextBox.Element.FocusAsync();
+            enterInEditionMode = false;
         }
+    }
+
+    List<QualificationType> ToListFromFlags(QualificationType flags)
+    {
+        return Enum.GetValues<QualificationType>()
+            .Where(v => v != QualificationType.None && flags.HasFlag(v))
+            .ToList();
+    }
+
+    QualificationType ToFlagsFromList(IEnumerable<QualificationType> items)
+    {
+        var result = QualificationType.None;
+        foreach (var it in items)
+        {
+            result |= it;
+        }
+        return result;
     }
 
     async void AddRow() {
         try {
-            var newPerson = new PersonModel { Nom = string.Empty, Prenom = string.Empty };
+            var newPerson = new PersonModel { Nom = string.Empty, Prenom = string.Empty, Service = serviceItems.First().Value, Qualification = QualificationType.None };
             people.Add(newPerson);
+            selectedQualifications = new List<QualificationType>();
+            editingPerson = newPerson;
             await grid.Reload();
             await grid.EditRow(newPerson);
         }
-        catch (Exception e) {
-            throw; // TODO handle exception
+        catch (Exception ex) {
+            throw new Exception(ex.Message);
         }
     }
 
-    async Task OnCreateRow(PersonModel person)
+    void StartEdit(PersonModel person) {
+        enterInUpdateMode = true;
+        editingPerson = person;
+        selectedQualifications = ToListFromFlags(person.Qualification);
+        grid.EditRow(person);
+    }
+
+    string GetQualificationText(QualificationType q)
     {
-        // Db.People.Add(person);
-        // await Db.SaveChangesAsync();
+        return string.Join(", ", q.GetFlagsDisplayNames());
     }
 
     async Task OnSaveRow(PersonModel person) {
-        Db.People.Add(person);
-        await Db.SaveChangesAsync();
-        grid.CancelEditRow(person);
-        await grid.Reload();
+        if (enterInUpdateMode) {
+            enterInUpdateMode = false;
+            await OnUpdateRow(person);
+        }
+        else {
+            person.Qualification = ToFlagsFromList(selectedQualifications);
+            Db.People.Add(person);
+            await Db.SaveChangesAsync();
+            grid.CancelEditRow(person);
+            editingPerson = null;
+            selectedQualifications.Clear();
+            await grid.Reload();
+        }
     }
 
     async Task OnUpdateRow(PersonModel person)
     {
+        person.Qualification = ToFlagsFromList(selectedQualifications);
         Db.People.Update(person);
         await Db.SaveChangesAsync();
+        grid.CancelEditRow(person);
+        editingPerson = null;
+        selectedQualifications.Clear();
+        await grid.Reload();
     }
 
     async Task DeleteRow(PersonModel person)
@@ -106,15 +184,15 @@
         // await InvokeAsync(StateHasChanged);
         await grid.Reload();
     }
-
-    async Task OnDeleteRow(PersonModel person)
-    {
-        await DeleteRow(person);
-    }
+    
 
     async Task CancelEditRow(PersonModel person) {
         grid.CancelEditRow(person);
-        people.Remove(person);
+        editingPerson = null;
+        if( !enterInUpdateMode) people.Remove(person);
+        enterInUpdateMode = false;
+        enterInUpdateMode = false;
+        selectedQualifications.Clear();
         await grid.Reload();
     }
 }

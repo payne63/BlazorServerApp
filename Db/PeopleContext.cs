@@ -19,4 +19,18 @@ public class PeopleContext : DbContext
         }
         optionsBuilder.UseSqlite($"Data Source={DbPath}");
     }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        // Store enums as string (TEXT) for compatibility with existing DB and readability
+        modelBuilder.Entity<PersonModel>()
+            .Property(p => p.Service)
+            .HasConversion<string>()
+            .HasMaxLength(100);
+
+        modelBuilder.Entity<PersonModel>()
+            .Property(p => p.Qualification)
+            .HasConversion<string>()
+            .HasMaxLength(200);
+    }
 }
