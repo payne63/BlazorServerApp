@@ -1,23 +1,32 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Reflection;
 
 namespace BlazorServerApp.Db;
 
+[Table( "People")]
 public class PersonModel
 {
+    [Key]
     public int Id { get; set; }
 
     [Required, MaxLength(100)]
-    public string Nom { get; set; }
+    public string Nom { get; set; } = string.Empty;
 
     [Required, MaxLength(100)]
-    public string Prenom { get; set; }
+    public string Prenom { get; set; } = string.Empty;
+    
+    [Required, MaxLength(100)]
+    public string Mail { get; set; } = string.Empty;
 
     [Required]
     public ServiceType Service { get; set; }
 
     [Required]
     public QualificationType Qualification { get; set; }
+    
+    [Required]
+    public bool IsDelete { get; set; } = false;
 }
 
 public enum ServiceType

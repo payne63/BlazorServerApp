@@ -1,0 +1,165 @@
+@page "/works-lite-db"
+@using BlazorServerApp.Db
+@inject LiteDbService LiteDb
+
+<PageTitle>Gestion des personnes (LiteDB Service)</PageTitle>
+
+<RadzenHeading Size="HeadingSize.H1" Text="Gestion des Travaux (LiteDB Service)" />
+
+<RadzenStack Orientation="Orientation.Vertical" Gap="10px">
+    <RadzenButton Icon="add" Text="Ajouter" Click="AddRow" Style="width:150px" />
+    <RadzenDataGrid TItem="WorkModel" Data="works" @ref="grid" EditMode="DataGridEditMode.Single" RowEdit="model => enterInEditionMode=true" RowRemove="OnDeleteRow" AllowFiltering="true" AllowPaging="true" PageSize="10" AllowSorting="true">
+        <Columns>
+            <RadzenDataGridColumn TItem="WorkModel" Property="Name" Title="Nom">
+                <EditTemplate Context="work">
+                    <RadzenTextBox @ref="NameEditionTextBox" @bind-Value="work.Name" Style="width:100%" Name="Nom" />
+                    <RadzenRequiredValidator Text="Nom requis" Component="Nom" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="WorkModel" Property="CustomerName" Title="Client">
+                <EditTemplate Context="work">
+                    <RadzenTextBox @bind-Value="work.CustomerName" Style="width:100%" Name="Client" />
+                    <RadzenRequiredValidator Text="Client requis" Component="Client" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="WorkModel" Property="Description" Title="Description">
+                <EditTemplate Context="work">
+                    <RadzenTextBox @bind-Value="work.Description" Style="width:100%" Name="Description" />
+                    <RadzenRequiredValidator Text="Description requis" Component="Description" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="WorkModel" Property="@nameof(WorkModel.DateCreation)" Title="Date de Creation">
+                <Template Context="work">
+                    @work.DateCreation?.ToString("dd MMMM yyyy")
+                </Template>
+                <EditTemplate Context="work">
+                    <RadzenDatePicker @bind-Value="work.DateCreation" Style="margin:100%" class="rz-datepicker"
+                                      Name="DateCreation" />
+                    @* <RadzenRequiredValidator Text="date requise" Component="DateCreation"/> *@
+                </EditTemplate>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="WorkModel" Property="@nameof(WorkModel.DateDeliveryExpected)" Title="Date de Livraison">
+                <Template Context="work">
+                    @work.DateDeliveryExpected?.ToString("dd MMMM yyyy")
+                </Template>
+                <EditTemplate Context="work">
+                    <RadzenDatePicker @bind-Value="work.DateDeliveryExpected" Style="width:200px" Name="DateDeliveryExpected" />
+                    @* <RadzenRequiredValidator Text="date requise" Component="DateDeliveryExpected"/> *@
+                </EditTemplate>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="WorkModel" Context="person" TextAlign="TextAlign.Center" Width="140px">
+                <Template Context="work">
+                    <RadzenButton Icon="edit" Size="ButtonSize.Small" Click="() => StartEdit(work)" class="rz-mr-2" />
+                    <RadzenButton Icon="delete" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Danger" Click="() => DeleteRow(work)" />
+                </Template>
+                <EditTemplate Context="work">
+                    <RadzenButton Icon="save" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Primary" Click="() => OnSaveRow(work)" class="rz-mr-2" />
+                    <RadzenButton Icon="cancel" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light" Click="() => CancelEditRow(work)" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+</RadzenStack>
+
+@code {
+    RadzenDataGrid<WorkModel> grid;
+    List<WorkModel> works = new();
+    RadzenTextBox? NameEditionTextBox;
+    bool enterInEditionMode = false;
+    bool enterInUpdateMode = false;
+
+
+    protected override void OnInitialized()
+    {
+        works = LiteDb.GetAllWorksActive();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if ( NameEditionTextBox is not null && enterInEditionMode) {
+            await Task.Yield();
+            await NameEditionTextBox.Element.FocusAsync();
+            enterInEditionMode = false; 
+        }
+    }
+
+    List<QualificationType> ToListFromFlags(QualificationType flags)
+    {
+        return Enum.GetValues<QualificationType>()
+            .Where(v => v != QualificationType.None && flags.HasFlag(v))
+            .ToList();
+    }
+
+    QualificationType ToFlagsFromList(IEnumerable<QualificationType> items)
+    {
+        var result = QualificationType.None;
+        foreach (var it in items)
+        {
+            result |= it;
+        }
+        return result;
+    }
+
+    async void AddRow() {
+        try {
+            var newWorks = new WorkModel { Name = String.Empty, CustomerName = String.Empty, Description = String.Empty };
+            works.Add(newWorks);
+            await grid.Reload();
+            await grid.EditRow(newWorks);
+        }
+        catch (Exception ex) {
+            throw new Exception(ex.Message);
+        }
+    }
+
+    void StartEdit(WorkModel work) {
+        enterInUpdateMode = true;
+        grid.EditRow(work);
+    }
+
+    string GetQualificationText(QualificationType q)
+    {
+        return string.Join(", ", q.GetFlagsDisplayNames());
+    }
+
+    async Task OnSaveRow(WorkModel work) {
+        if (enterInUpdateMode) {
+            enterInUpdateMode = false;
+            await OnUpdateRow(work);
+        }
+        else {
+            LiteDb.Insert(work);
+            grid.CancelEditRow(work);
+            works = LiteDb.GetAllWorksActive();
+            await grid.Reload();
+        }
+    }
+
+    async Task OnUpdateRow(WorkModel work)
+    {
+        LiteDb.Update(work);
+        grid.CancelEditRow(work);
+        works = LiteDb.GetAllWorksActive();
+        await grid.Reload();
+    }
+
+    async Task DeleteRow(WorkModel work)
+    {
+        if (works.Contains(work))
+        {
+            works.Remove(work);
+        }
+        LiteDb.SoftDelete(work);
+        // Ensure persistence of soft delete
+        LiteDb.Update(work);
+        works = LiteDb.GetAllWorksActive();
+        await grid.Reload();
+    }
+    
+
+    async Task CancelEditRow(WorkModel work) {
+        grid.CancelEditRow(work);
+        if( !enterInUpdateMode) works.Remove(work);
+        enterInUpdateMode = false;
+        await grid.Reload();
+    }
+}

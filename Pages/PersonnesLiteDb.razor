@@ -1,14 +1,14 @@
-@page "/personnes"
+@page "/personnes-lite-db"
 @using BlazorServerApp.Db
-@inject PeopleContext Db
+@inject LiteDbService LiteDb
 
-<PageTitle>Gestion des personnes</PageTitle>
+<PageTitle>Gestion des personnes (LiteDB Service)</PageTitle>
 
-<RadzenHeading Size="HeadingSize.H1" Text="Gestion des personnes" />
+<RadzenHeading Size="HeadingSize.H1" Text="Gestion des personnes (LiteDB Service)" />
 
 <RadzenStack Orientation="Orientation.Vertical" Gap="10px">
-    <RadzenButton Icon="add" Text="Ajouter" Click="AddRow" Style="width:150px"/>
-    <RadzenDataGrid TItem="PersonModel" Data="people" @ref="grid" EditMode="DataGridEditMode.Single"  RowEdit="model => enterInEditionMode=true" RowRemove="OnDeleteRow" AllowFiltering="true" AllowPaging="true" PageSize="10" AllowSorting="true">
+    <RadzenButton Icon="add" Text="Ajouter" Click="AddRow" Style="width:150px" />
+    <RadzenDataGrid TItem="PersonModel" Data="people" @ref="grid" EditMode="DataGridEditMode.Single" RowEdit="model => enterInEditionMode=true" RowRemove="OnDeleteRow" AllowFiltering="true" AllowPaging="true" PageSize="10" AllowSorting="true">
         <Columns>
             <RadzenDataGridColumn TItem="PersonModel" Property="Nom" Title="Nom">
                 <EditTemplate Context="person">
@@ -89,8 +89,7 @@
 
     protected override void OnInitialized()
     {
-        Db.Database.EnsureCreated();
-        people = Db.People.OrderBy(p => p.Nom).ThenBy(p => p.Prenom).Where(p=> p.IsDelete != true).ToList();
+        people = LiteDb.GetAllPersonsActive();
         serviceItems = Enum.GetValues<ServiceType>()
             .Select(v => new ServiceItem { Value = v, Text = v.GetDisplayName() })
             .ToList();
@@ -127,7 +126,7 @@
 
     async void AddRow() {
         try {
-            var newPerson = new PersonModel { Nom = string.Empty, Prenom = string.Empty, Service = serviceItems.First().Value, Qualification = QualificationType.None };
+            var newPerson = new PersonModel { Nom = string.Empty, Prenom = string.Empty, Mail = string.Empty, Service = serviceItems.First().Value, Qualification = QualificationType.None };
             people.Add(newPerson);
             selectedQualifications = new List<QualificationType>();
             await grid.Reload();
@@ -156,10 +155,10 @@
         }
         else {
             person.Qualification = ToFlagsFromList(selectedQualifications);
-            Db.People.Add(person);
-            await Db.SaveChangesAsync();
+            LiteDb.Insert(person);
             grid.CancelEditRow(person);
             selectedQualifications.Clear();
+            people = LiteDb.GetAllPersonsActive();
             await grid.Reload();
         }
     }
@@ -167,10 +166,10 @@
     async Task OnUpdateRow(PersonModel person)
     {
         person.Qualification = ToFlagsFromList(selectedQualifications);
-        Db.People.Update(person);
-        await Db.SaveChangesAsync();
+        LiteDb.Update(person);
         grid.CancelEditRow(person);
         selectedQualifications.Clear();
+        people = LiteDb.GetAllPersonsActive();
         await grid.Reload();
     }
 
@@ -180,12 +179,10 @@
         {
             people.Remove(person);
         }
-
-        person.IsDelete = true;
-        Db.People.Update(person);
-        // Db.People.Remove(person);
-        await Db.SaveChangesAsync();
-        // await InvokeAsync(StateHasChanged);
+        LiteDb.SoftDelete(person);
+        // Ensure persistence of soft delete
+        LiteDb.Update(person);
+        people = LiteDb.GetAllPersonsActive();
         await grid.Reload();
     }
     
@@ -193,7 +190,6 @@
     async Task CancelEditRow(PersonModel person) {
         grid.CancelEditRow(person);
         if( !enterInUpdateMode) people.Remove(person);
-        enterInUpdateMode = false;
         enterInUpdateMode = false;
         selectedQualifications.Clear();
         await grid.Reload();

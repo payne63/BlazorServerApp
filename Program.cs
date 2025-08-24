@@ -23,6 +23,8 @@ public class Program
         builder.Services.AddScoped<Services.ThemeService>();
         builder.Services.AddScoped<EventConsoleService>();
         builder.Services.AddScoped<AccessDatabaseService>();
+        builder.Services.AddScoped<LiteDbPeopleService>();
+        builder.Services.AddScoped<LiteDbService>();
         // builder.Services.AddSingleton<EventConsoleService>();
 
         var app = builder.Build();

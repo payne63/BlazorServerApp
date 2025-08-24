@@ -1,10 +1,10 @@
-@page "/personnes"
+@page "/personnes-lite"
 @using BlazorServerApp.Db
-@inject PeopleContext Db
+@inject LiteDbPeopleService LitePeople
 
-<PageTitle>Gestion des personnes</PageTitle>
+<PageTitle>Gestion des personnes (LiteDB)</PageTitle>
 
-<RadzenHeading Size="HeadingSize.H1" Text="Gestion des personnes" />
+<RadzenHeading Size="HeadingSize.H1" Text="Gestion des personnes (LiteDB)" />
 
 <RadzenStack Orientation="Orientation.Vertical" Gap="10px">
     <RadzenButton Icon="add" Text="Ajouter" Click="AddRow" Style="width:150px"/>
@@ -89,8 +89,7 @@
 
     protected override void OnInitialized()
     {
-        Db.Database.EnsureCreated();
-        people = Db.People.OrderBy(p => p.Nom).ThenBy(p => p.Prenom).Where(p=> p.IsDelete != true).ToList();
+        people = LitePeople.GetAllActive();
         serviceItems = Enum.GetValues<ServiceType>()
             .Select(v => new ServiceItem { Value = v, Text = v.GetDisplayName() })
             .ToList();
@@ -127,7 +126,7 @@
 
     async void AddRow() {
         try {
-            var newPerson = new PersonModel { Nom = string.Empty, Prenom = string.Empty, Service = serviceItems.First().Value, Qualification = QualificationType.None };
+            var newPerson = new PersonModel { Nom = string.Empty, Prenom = string.Empty, Mail = string.Empty, Service = serviceItems.First().Value, Qualification = QualificationType.None };
             people.Add(newPerson);
             selectedQualifications = new List<QualificationType>();
             await grid.Reload();
@@ -156,10 +155,10 @@
         }
         else {
             person.Qualification = ToFlagsFromList(selectedQualifications);
-            Db.People.Add(person);
-            await Db.SaveChangesAsync();
+            LitePeople.Insert(person);
             grid.CancelEditRow(person);
             selectedQualifications.Clear();
+            people = LitePeople.GetAllActive();
             await grid.Reload();
         }
     }
@@ -167,10 +166,10 @@
     async Task OnUpdateRow(PersonModel person)
     {
         person.Qualification = ToFlagsFromList(selectedQualifications);
-        Db.People.Update(person);
-        await Db.SaveChangesAsync();
+        LitePeople.Update(person);
         grid.CancelEditRow(person);
         selectedQualifications.Clear();
+        people = LitePeople.GetAllActive();
         await grid.Reload();
     }
 
@@ -181,11 +180,8 @@
             people.Remove(person);
         }
 
-        person.IsDelete = true;
-        Db.People.Update(person);
-        // Db.People.Remove(person);
-        await Db.SaveChangesAsync();
-        // await InvokeAsync(StateHasChanged);
+        LitePeople.SoftDelete(person);
+        people = LitePeople.GetAllActive();
         await grid.Reload();
     }
     
@@ -193,7 +189,6 @@
     async Task CancelEditRow(PersonModel person) {
         grid.CancelEditRow(person);
         if( !enterInUpdateMode) people.Remove(person);
-        enterInUpdateMode = false;
         enterInUpdateMode = false;
         selectedQualifications.Clear();
         await grid.Reload();
